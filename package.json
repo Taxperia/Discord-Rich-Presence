@@ -4,6 +4,10 @@
   "description": "Show your Cursor coding activity on Discord - files, languages, and workspace",
   "version": "1.0.6",
   "publisher": "Taxperia",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Taxperia/cursor-discord-presence.git"
+  },
   "engines": {
     "vscode": "^1.74.0"
   },

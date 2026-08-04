@@ -14,12 +14,7 @@ A VS Code / Cursor extension that shows your coding activity on Discord.
 
 ## Discord Preview
 
-```
-Cursor
-Editing: package.json
-cursor presence
-0:14
-```
+![Discord Rich Presence](https://raw.githubusercontent.com/Taxperia/cursor-discord-presence/master/screenshot.png)
 
 ## Installation
 
