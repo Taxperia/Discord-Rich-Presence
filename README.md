@@ -75,4 +75,4 @@ JavaScript, TypeScript, Python, Java, C++, C, C#, Go, Rust, Ruby, PHP, Swift, Ko
 
 ## License
 
-MIT
+Apache License 2.0
