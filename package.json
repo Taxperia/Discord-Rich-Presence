@@ -1,0 +1,73 @@
+{
+  "name": "cursor-discord-presence",
+  "displayName": "Cursor Discord Rich Presence",
+  "description": "Show your Cursor coding activity on Discord - files, languages, and workspace",
+  "version": "1.0.6",
+  "publisher": "Taxperia",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./out/extension.js",
+  "browser": "./out/extension.js",
+  "icon": "logo.png",
+  "contributes": {
+    "commands": [
+      {
+        "command": "cursorDiscord.reconnect",
+        "title": "Discord RPC: Reconnect"
+      },
+      {
+        "command": "cursorDiscord.disconnect",
+        "title": "Discord RPC: Disconnect"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Cursor Discord RPC",
+      "properties": {
+        "cursorDiscord.showWorkspace": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show workspace name on Discord"
+        },
+        "cursorDiscord.showFileName": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show current file name on Discord"
+        },
+        "cursorDiscord.showLanguage": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show programming language on Discord"
+        },
+        "cursorDiscord.showElapsedTime": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show elapsed time on Discord"
+        },
+        "cursorDiscord.idleMessage": {
+          "type": "string",
+          "default": "Idle",
+          "description": "Message shown when window is not focused"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --target=node18 --minify",
+    "watch": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --target=node18 --watch",
+    "vscode:prepublish": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.74.0",
+    "esbuild": "^0.28.1",
+    "typescript": "^5.3.0"
+  }
+}
