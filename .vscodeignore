@@ -6,3 +6,5 @@ tsconfig.json
 .gitignore
 **/*.ts
 **/*.map
+logo.ico
+screenshot.png

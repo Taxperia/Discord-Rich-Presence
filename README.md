@@ -2,11 +2,14 @@
 
 A VS Code / Cursor extension that shows your coding activity on Discord.
 
+[![VS Code Marketplace](https://img.shields.io/badge/VS%20Code-Marketplace-blue)](https://marketplace.visualstudio.com/items?itemName=Taxperia.cursor-discord-presence)
+[![Open VSX](https://img.shields.io/badge/Open%20VSX-Marketplace-orange)](https://open-vsx.org/extension/Taxperia/cursor-discord-presence)
+
 ## Features
 
 - Shows current file name on Discord
 - Shows workspace name
-- Detects and displays programming language
+- Detects and displays programming language (40+ languages)
 - Tracks elapsed time
 - Idle mode when window loses focus
 - Auto-connect and reconnect
@@ -18,25 +21,22 @@ A VS Code / Cursor extension that shows your coding activity on Discord.
 
 ## Installation
 
-### Method 1: VSIX Installation
+### Cursor (Recommended)
 
-1. Download the `cursor-discord-presence-1.0.4.vsix` file
-2. Open Cursor
+Open Cursor → Extensions → Search "Cursor Discord Rich Presence" → Install
+
+### VS Code
+
+Open VS Code → Extensions → Search "Cursor Discord Rich Presence" → Install
+
+### Manual Installation
+
+1. Download the latest `.vsix` from [GitHub Releases](https://github.com/Taxperia/cursor-discord-presence/releases)
+2. Open Cursor/VS Code
 3. Press `Ctrl+Shift+P`
 4. Type "Extensions: Install from VSIX..."
 5. Select the downloaded `.vsix` file
-6. Restart Cursor
-
-### Method 2: Build from Source
-
-```bash
-git clone https://github.com/your-username/cursor-discord-presence.git
-cd cursor-discord-presence
-npm install
-npm run build
-```
-
-Then press `F5` to run in debug mode in Cursor.
+6. Restart
 
 ## Settings
 
@@ -63,7 +63,7 @@ JavaScript, TypeScript, Python, Java, C++, C, C#, Go, Rust, Ruby, PHP, Swift, Ko
 
 ## Requirements
 
-- Cursor (or VS Code) 1.74 or higher
+- Cursor or VS Code 1.74 or higher
 - Discord desktop app (running)
 
 ## Technical Details
@@ -73,6 +73,14 @@ JavaScript, TypeScript, Python, Java, C++, C, C#, Go, Rust, Ruby, PHP, Swift, Ko
 - Sends ping every 30 seconds to keep connection alive
 - Total size: ~6KB
 
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Open a Pull Request
+
 ## License
 
-Apache License 2.0
+[Apache License 2.0](LICENSE)

@@ -1,7 +1,7 @@
 {
-  "name": "cursor-discord-presence",
-  "displayName": "Cursor Discord Rich Presence",
-  "description": "Show your Cursor coding activity on Discord - files, languages, and workspace",
+  "name": "cursor-presence",
+  "displayName": "Cursor Presence",
+  "description": "Shows the current Cursor editor status as a Rich Presence using the official RPC protocol.",
   "version": "1.0.6",
   "publisher": "Taxperia",
   "repository": {
@@ -15,25 +15,24 @@
     "Other"
   ],
   "activationEvents": [
-    "*"
+    "onStartupFinished"
   ],
-  "main": "./out/extension.js",
-  "browser": "./out/extension.js",
   "icon": "logo.png",
+  "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "cursorDiscord.reconnect",
-        "title": "Discord RPC: Reconnect"
+        "title": "RPC: Reconnect"
       },
       {
         "command": "cursorDiscord.disconnect",
-        "title": "Discord RPC: Disconnect"
+        "title": "RPC: Disconnect"
       }
     ],
     "configuration": {
       "type": "object",
-      "title": "Cursor Discord RPC",
+      "title": "Cursor RPC",
       "properties": {
         "cursorDiscord.showWorkspace": {
           "type": "boolean",
