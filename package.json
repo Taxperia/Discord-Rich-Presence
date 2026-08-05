@@ -1,12 +1,12 @@
 {
   "name": "cursor-presence",
-  "displayName": "Cursor Presence",
+  "displayName": "Cursor Discord Presence",
   "description": "Shows the current Cursor editor status as a Rich Presence using the official RPC protocol.",
-  "version": "1.0.6",
+  "version": "1.1.1",
   "publisher": "Taxperia",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Taxperia/cursor-discord-presence.git"
+    "url": "https://github.com/Taxperia/Discord-Rich-Presence.git"
   },
   "engines": {
     "vscode": "^1.74.0"
