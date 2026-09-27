@@ -1,8 +1,8 @@
 {
   "name": "cursor-presence",
-  "displayName": "Cursor Discord Presence",
-  "description": "Shows the current Cursor editor status as a Rich Presence using the official RPC protocol.",
-  "version": "1.1.1",
+  "displayName": "%extension.displayName%",
+  "description": "%extension.description%",
+  "version": "1.1.2",
   "publisher": "Taxperia",
   "repository": {
     "type": "git",
@@ -23,46 +23,125 @@
     "commands": [
       {
         "command": "cursorDiscord.reconnect",
-        "title": "RPC: Reconnect"
+        "title": "%command.reconnect%"
       },
       {
         "command": "cursorDiscord.disconnect",
-        "title": "RPC: Disconnect"
+        "title": "%command.disconnect%"
+      },
+      {
+        "command": "cursorDiscord.openSettings",
+        "title": "%command.openSettings%"
       }
     ],
     "configuration": {
       "type": "object",
-      "title": "Cursor RPC",
+      "title": "%config.title%",
       "properties": {
+        "cursorDiscord.enabled": {
+          "type": "boolean",
+          "default": true,
+          "order": 1,
+          "description": "%config.enabled%"
+        },
+        "cursorDiscord.language": {
+          "type": "string",
+          "default": "auto",
+          "order": 2,
+          "enum": [
+            "auto",
+            "en",
+            "tr"
+          ],
+          "enumDescriptions": [
+            "%config.language.auto%",
+            "%config.language.en%",
+            "%config.language.tr%"
+          ],
+          "description": "%config.language%"
+        },
+        "cursorDiscord.largeImageMode": {
+          "type": "string",
+          "default": "languageText",
+          "order": 3,
+          "enum": [
+            "editor",
+            "languageText",
+            "languageTextEditor",
+            "languageOutline",
+            "languageOutlineEditor",
+            "languageLogo"
+          ],
+          "enumDescriptions": [
+            "%config.largeImageMode.editor%",
+            "%config.largeImageMode.languageText%",
+            "%config.largeImageMode.languageTextEditor%",
+            "%config.largeImageMode.languageOutline%",
+            "%config.largeImageMode.languageOutlineEditor%",
+            "%config.largeImageMode.languageLogo%"
+          ],
+          "description": "%config.largeImageMode%"
+        },
+        "cursorDiscord.privacyMode": {
+          "type": "boolean",
+          "default": false,
+          "order": 4,
+          "description": "%config.privacyMode%"
+        },
+        "cursorDiscord.showSmallEditorIcon": {
+          "type": "boolean",
+          "default": true,
+          "order": 5,
+          "description": "%config.showSmallEditorIcon%"
+        },
         "cursorDiscord.showWorkspace": {
           "type": "boolean",
           "default": true,
-          "description": "Show workspace name on Discord"
+          "order": 10,
+          "description": "%config.showWorkspace%"
         },
         "cursorDiscord.showFileName": {
           "type": "boolean",
           "default": true,
-          "description": "Show current file name on Discord"
+          "order": 11,
+          "description": "%config.showFileName%"
         },
         "cursorDiscord.showLanguage": {
           "type": "boolean",
           "default": true,
-          "description": "Show programming language on Discord"
+          "order": 12,
+          "description": "%config.showLanguage%"
         },
         "cursorDiscord.showElapsedTime": {
           "type": "boolean",
           "default": true,
-          "description": "Show elapsed time on Discord"
+          "order": 13,
+          "description": "%config.showElapsedTime%"
+        },
+        "cursorDiscord.customDetails": {
+          "type": "string",
+          "default": "",
+          "order": 20,
+          "markdownDescription": "%config.customDetails%"
+        },
+        "cursorDiscord.customState": {
+          "type": "string",
+          "default": "",
+          "order": 21,
+          "markdownDescription": "%config.customState%"
         },
         "cursorDiscord.idleMessage": {
           "type": "string",
-          "default": "Idle",
-          "description": "Message shown when window is not focused"
+          "default": "",
+          "order": 22,
+          "description": "%config.idleMessage%"
         }
       }
     }
   },
   "scripts": {
+    "assets": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-rich-presence-assets.ps1",
+    "readme:assets": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-readme-showcase.ps1",
     "build": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --target=node18 --minify",
     "watch": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --target=node18 --watch",
     "vscode:prepublish": "npm run build"
