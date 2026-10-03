@@ -1,6 +1,8 @@
 # Changelog
 
-## [1.2.0] - 2026-10-03
+## [1.1.3] - 2026-10-03
+
+- Correct the release number to 1.1.3 and remove unverified product mockups from the README.
 
 - Serve Rich Presence images from GitHub URLs with content-hash cache keys.
 - Separate default text, language logos, outlined text, and editor-specific artwork.

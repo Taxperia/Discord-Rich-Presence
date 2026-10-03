@@ -63,7 +63,7 @@ No separate extension or Discord application ID is needed. Builds that disable
 third-party extensions must allow this extension before it can run.
 
 TaxCode artwork and GitHub-hosted images are available starting with version
-1.2.0. Use that version or newer for these features.
+1.1.3. Use that version or newer for these features.
 
 ### Manual Installation
 
