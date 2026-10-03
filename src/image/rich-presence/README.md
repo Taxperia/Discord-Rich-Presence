@@ -109,6 +109,7 @@ unchanged and excluded from the generated manifest. Its embedded badge is
 sized to match the visible Cursor and VS Code glyphs (about 80px high on the
 512px canvas).
 
-Run `npm run readme:assets` to regenerate documentation previews under
-src/image/readme. The glass treatment is a documentation mockup, not an
-additional selectable Rich Presence mode.
+The product README does not use simulated Discord screenshots. The files in
+`src/image/readme` are historical design mockups and are not evidence of the
+extension's actual appearance. Real Discord screenshots should be captured and
+verified before being added to the product README.

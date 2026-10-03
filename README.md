@@ -15,41 +15,26 @@ A VS Code / Cursor / TaxCode extension that shows your coding activity on Discor
 - English and Turkish Rich Presence messages
 - Privacy mode and customizable Details / State text
 - Tracks elapsed time
-- Idle mode when window loses focus
+- Idle mode when no text editor is active
 - Auto-connect and reconnect
 - Status bar connection indicator
 
-## Discord Preview
-
-![Discord Rich Presence](https://raw.githubusercontent.com/Taxperia/Discord-Rich-Presence/master/src/image/screenshot.png)
-
 ## Artwork Modes
 
-Choose between a clean language abbreviation, the language's original logo,
-or a custom outlined font. Editor-aware modes can also place a small editor
-badge on the artwork.
+The extension supports the following large-image settings:
 
-![Main text, language logo, and styled font comparison](src/image/readme/main-showcase.png)
+| Setting | Artwork |
+|---|---|
+| `editor` | Detected editor's icon |
+| `languageText` | Filled language text |
+| `languageTextEditor` | Filled language text with the editor icon in the corner |
+| `languageOutline` | Outlined language text |
+| `languageOutlineEditor` | Outlined language text with the editor icon in the corner |
+| `languageLogo` | Language logo, falling back to filled text if unavailable |
 
-## Editor Badge Styles
-
-VS Code, Cursor, and plugin-enabled TaxCode editions are supported. The flat
-style embeds the editor logo in the large image, the oval style previews
-Discord's native circular `small_image` badge, and glass is an alternate
-embedded treatment.
-
-![VS Code, Cursor, and TaxCode badge styles](src/image/readme/editor-badge-styles.png)
-
-<details>
-<summary>Open individual editor badge previews</summary>
-
-| Editor | Flat / embedded | Oval / Discord badge | Glass |
-|---|---|---|---|
-| VS Code | ![VS Code flat](src/image/readme/vscode-flat.png) | ![VS Code Discord badge](src/image/readme/vscode-oval.png) | ![VS Code glass](src/image/readme/vscode-glass.png) |
-| Cursor | ![Cursor flat](src/image/readme/cursor-flat.png) | ![Cursor Discord badge](src/image/readme/cursor-oval.png) | ![Cursor glass](src/image/readme/cursor-glass.png) |
-| TaxCode | ![TaxCode flat](src/image/readme/taxcode-flat.png) | ![TaxCode Discord badge](src/image/readme/taxcode-oval.png) | ![TaxCode glass](src/image/readme/taxcode-glass.png) |
-
-</details>
+The optional small editor badge uses Discord's native `small_image` field.
+Discord controls its placement and shape. Embedded-icon modes omit that
+separate badge. There is no glass-style setting.
 
 ## Installation
 
