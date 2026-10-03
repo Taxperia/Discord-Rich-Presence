@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.0] - 2026-10-03
+
+- Serve Rich Presence images from GitHub URLs with content-hash cache keys.
+- Separate default text, language logos, outlined text, and editor-specific artwork.
+- Add TaxCode icons, embedded variants, and editor detection.
+- Declare local UI extension hosting for desktop Discord IPC and document TaxCode installation.
+- Add a real TaxCode extension-host smoke test using an isolated profile.
+- Load language mappings and asset paths from a validated remote manifest, with cached and bundled fallbacks.
+- Update artwork generators and add catalog integrity, selection, and cache tests.
+
 ## [1.1.2] - 2026-09-27
 
 ### Added

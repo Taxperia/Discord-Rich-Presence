@@ -2,7 +2,7 @@
   "name": "cursor-presence",
   "displayName": "%extension.displayName%",
   "description": "%extension.description%",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "publisher": "Taxperia",
   "repository": {
     "type": "git",
@@ -19,6 +19,9 @@
   ],
   "icon": "logo.png",
   "main": "./out/extension.js",
+  "extensionKind": [
+    "ui"
+  ],
   "contributes": {
     "commands": [
       {
@@ -140,11 +143,16 @@
     }
   },
   "scripts": {
-    "assets": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-rich-presence-assets.ps1",
+    "assets": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-rich-presence-assets.ps1 && node scripts/generate-asset-manifest.cjs",
     "readme:assets": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-readme-showcase.ps1",
     "build": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --target=node18 --minify",
     "watch": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --target=node18 --watch",
-    "vscode:prepublish": "npm run build"
+    "vscode:prepublish": "npm run build",
+    "assets:manifest": "node scripts/generate-asset-manifest.cjs",
+    "assets:check": "node scripts/generate-asset-manifest.cjs --check",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test tests/*.test.cjs",
+    "test:taxcode": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-taxcode.ps1"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",

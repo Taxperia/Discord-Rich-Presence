@@ -4,6 +4,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "rich-presence-paths.ps1")
 
 Add-Type -AssemblyName System.Drawing
 
@@ -17,6 +18,7 @@ $deviconCssPath = Join-Path $deviconDirectory "devicon.min.css"
 $editorLogoDirectory = Join-Path $PSScriptRoot "assets\editor-logos"
 $cursorLogoReference = Join-Path $editorLogoDirectory "cursor-reference.png"
 $vscodeLogoReference = Join-Path $editorLogoDirectory "vscode-reference.png"
+$taxcodeLogoReference = Join-Path $PSScriptRoot "..\src\image\rich-presence\editors\taxcode\iconwhite.png"
 
 $assets = @(
     @{ Key = "code";       Text = "CODE";     Color = "#E6E6E6" },
@@ -123,7 +125,8 @@ function Save-Canvas {
         [string]$Name
     )
 
-    $outputPath = Join-Path $OutputDirectory "$Name.png"
+    $outputPath = Join-Path $OutputDirectory (Get-RichPresenceAssetPath -Name $Name)
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $outputPath) | Out-Null
     try {
         $Canvas.Bitmap.Save($outputPath, [System.Drawing.Imaging.ImageFormat]::Png)
     }
@@ -138,7 +141,7 @@ function New-TextAsset {
         [string]$Name,
         [string]$Text,
         [string]$Color,
-        [ValidateSet("", "cursor", "vscode")]
+        [ValidateSet("", "cursor", "vscode", "taxcode")]
         [string]$Editor = ""
     )
 
@@ -193,11 +196,15 @@ function New-TextAsset {
 function Draw-EmbeddedEditorGlyph {
     param(
         [System.Drawing.Graphics]$Graphics,
-        [ValidateSet("cursor", "vscode")]
+        [ValidateSet("cursor", "vscode", "taxcode")]
         [string]$Editor
     )
 
-    $referencePath = if ($Editor -eq "cursor") { $cursorLogoReference } else { $vscodeLogoReference }
+    $referencePath = switch ($Editor) {
+        "cursor" { $cursorLogoReference }
+        "taxcode" { $taxcodeLogoReference }
+        default { $vscodeLogoReference }
+    }
     if (-not (Test-Path -LiteralPath $referencePath)) {
         throw "Editor logo reference is missing: $referencePath"
     }
@@ -207,11 +214,18 @@ function Draw-EmbeddedEditorGlyph {
     $previousInterpolation = $Graphics.InterpolationMode
     try {
         $Graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
-        $source = [System.Drawing.Rectangle]::new(760, 760, 494, 494)
-        $destination = [System.Drawing.Rectangle]::new(310, 310, 202, 202)
+        $source = if ($Editor -eq "taxcode") {
+            [System.Drawing.Rectangle]::new(0, 0, $reference.Width, $reference.Height)
+        } else { [System.Drawing.Rectangle]::new(760, 760, 494, 494) }
+        # Cursor/VS Code have padding baked into their 494px reference crops:
+        # their visible glyph is about 80px high on the 512px canvas.
+        # iconwhite.png is tightly framed, so match the visible glyph size.
+        $destination = if ($Editor -eq "taxcode") {
+            [System.Drawing.Rectangle]::new(418, 418, 84, 84)
+        } else { [System.Drawing.Rectangle]::new(310, 310, 202, 202) }
         $transparentLow = [System.Drawing.Color]::FromArgb(0, 0, 0)
         $transparentHigh = [System.Drawing.Color]::FromArgb(32, 32, 32)
-        $imageAttributes.SetColorKey($transparentLow, $transparentHigh)
+        if ($Editor -ne "taxcode") { $imageAttributes.SetColorKey($transparentLow, $transparentHigh) }
         $Graphics.DrawImage(
             $reference,
             $destination,
@@ -235,7 +249,7 @@ function New-OutlineTextAsset {
         [string]$Name,
         [string]$Text,
         [string]$Color,
-        [ValidateSet("", "cursor", "vscode")]
+        [ValidateSet("", "cursor", "vscode", "taxcode")]
         [string]$Editor = ""
     )
 
@@ -425,7 +439,7 @@ function New-EditorAssetFromReference {
     param(
         [string]$Name,
         [string]$ReferencePath,
-        [System.Drawing.Rectangle]$SourceRectangle
+        [System.Drawing.Rectangle]$SourceRectangle = [System.Drawing.Rectangle]::Empty
     )
 
     if (-not (Test-Path -LiteralPath $ReferencePath)) {
@@ -436,6 +450,9 @@ function New-EditorAssetFromReference {
     $graphics = $canvas.Graphics
     $reference = [System.Drawing.Image]::FromFile($ReferencePath)
     try {
+        if ($SourceRectangle.IsEmpty) {
+            $SourceRectangle = [System.Drawing.Rectangle]::new(0, 0, $reference.Width, $reference.Height)
+        }
         $graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
         $destination = [System.Drawing.Rectangle]::new(48, 48, 416, 416)
         $graphics.DrawImage($reference, $destination, $SourceRectangle, [System.Drawing.GraphicsUnit]::Pixel)
@@ -451,9 +468,11 @@ foreach ($asset in $assets) {
     New-TextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color
     New-TextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "cursor"
     New-TextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "vscode"
+    New-TextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "taxcode"
     New-OutlineTextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color
     New-OutlineTextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "cursor"
     New-OutlineTextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "vscode"
+    New-OutlineTextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "taxcode"
 }
 
 if (-not (Test-Path -LiteralPath $deviconFontPath) -or -not (Test-Path -LiteralPath $deviconCssPath)) {
@@ -480,4 +499,6 @@ finally {
 New-EditorAssetFromReference -Name "cube_2d_dark" -ReferencePath $cursorLogoReference -SourceRectangle ([System.Drawing.Rectangle]::new(1003, 999, 251, 255))
 New-EditorAssetFromReference -Name "vscode-alt" -ReferencePath $vscodeLogoReference -SourceRectangle ([System.Drawing.Rectangle]::new(977, 971, 254, 254))
 
-Write-Output "Generated $(($assets.Count * 6) + $generatedLogoCount + 2) assets in $([System.IO.Path]::GetFullPath($OutputDirectory))"
+New-EditorAssetFromReference -Name "taxcode" -ReferencePath $taxcodeLogoReference
+
+Write-Output "Generated $(($assets.Count * 8) + $generatedLogoCount + 3) assets in $([System.IO.Path]::GetFullPath($OutputDirectory))"

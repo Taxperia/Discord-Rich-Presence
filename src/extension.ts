@@ -1,24 +1,12 @@
 import * as vscode from "vscode";
 import { SimpleDiscordRPC } from "./simple-rpc";
+import { activityAssets, BUNDLED_MANIFEST, CODE_META, LanguageMeta, LargeImageMode, resolveEditor, resolveLanguage } from "./asset-catalog";
+import { AssetCatalogLoader, CATALOG_REFRESH_MS } from "./asset-catalog-loader";
 
-const CURSOR_APP_ID = "1553496746720624841";
+const DISCORD_APPLICATION_ID = "1553496746720624841";
 const THROTTLE_MS = 2000;
 
-type LanguageMeta = {
-    name: string;
-    assetKey: string;
-    logoAssetKey?: string;
-    outlineAssetKey: string;
-};
-
-type EditorMeta = {
-    name: string;
-    assetKey: string;
-    embeddedKey: "cursor" | "vscode";
-};
-
 type DisplayLanguage = "auto" | "en" | "tr";
-type LargeImageMode = "editor" | "languageText" | "languageTextEditor" | "languageOutline" | "languageOutlineEditor" | "languageLogo";
 
 type PresenceConfig = {
     enabled: boolean;
@@ -35,110 +23,8 @@ type PresenceConfig = {
     customState: string;
 };
 
-const languageMeta = (
-    name: string,
-    assetKey: string,
-    hasLogo: boolean = true
-): LanguageMeta => ({
-    name,
-    assetKey,
-    logoAssetKey: hasLogo ? `${assetKey}-logo` : undefined,
-    outlineAssetKey: `${assetKey}-outline`,
-});
-
-const CODE_META = languageMeta("Code", "code", false);
-
-const LANGUAGE_BY_ID: Record<string, LanguageMeta> = {
-    javascript: languageMeta("JavaScript", "javascript"),
-    typescript: languageMeta("TypeScript", "typescript"),
-    python: languageMeta("Python", "python"),
-    java: languageMeta("Java", "java"),
-    cpp: languageMeta("C++", "cpp"),
-    c: languageMeta("C", "c"),
-    csharp: languageMeta("C#", "csharp"),
-    go: languageMeta("Go", "go"),
-    rust: languageMeta("Rust", "rust"),
-    ruby: languageMeta("Ruby", "ruby"),
-    php: languageMeta("PHP", "php"),
-    swift: languageMeta("Swift", "swift"),
-    kotlin: languageMeta("Kotlin", "kotlin"),
-    html: languageMeta("HTML", "html"),
-    css: languageMeta("CSS", "css"),
-    scss: languageMeta("SCSS", "scss"),
-    json: languageMeta("JSON", "json"),
-    markdown: languageMeta("Markdown", "markdown"),
-    yaml: languageMeta("YAML", "yaml"),
-    xml: languageMeta("XML", "xml"),
-    sql: languageMeta("SQL", "sql"),
-    shellscript: languageMeta("Shell", "shell"),
-    powershell: languageMeta("PowerShell", "powershell"),
-    dockerfile: languageMeta("Docker", "docker"),
-    toml: languageMeta("TOML", "toml", false),
-    ini: languageMeta("INI", "ini", false),
-    vue: languageMeta("Vue", "vue"),
-    svelte: languageMeta("Svelte", "svelte"),
-    javascriptreact: languageMeta("React JSX", "react"),
-    typescriptreact: languageMeta("React TSX", "react"),
-    graphql: languageMeta("GraphQL", "graphql"),
-    lua: languageMeta("Lua", "lua"),
-    dart: languageMeta("Dart", "dart"),
-    r: languageMeta("R", "r"),
-    elixir: languageMeta("Elixir", "elixir"),
-    erlang: languageMeta("Erlang", "erlang"),
-    haskell: languageMeta("Haskell", "haskell"),
-    clojure: languageMeta("Clojure", "clojure"),
-    scala: languageMeta("Scala", "scala"),
-    solidity: languageMeta("Solidity", "solidity"),
-    terraform: languageMeta("Terraform", "terraform"),
-    hcl: languageMeta("HCL", "hcl", false),
-};
-
-const LANGUAGE_BY_EXTENSION: Record<string, LanguageMeta> = {
-    js: LANGUAGE_BY_ID.javascript,
-    ts: LANGUAGE_BY_ID.typescript,
-    py: LANGUAGE_BY_ID.python,
-    java: LANGUAGE_BY_ID.java,
-    cpp: LANGUAGE_BY_ID.cpp,
-    c: LANGUAGE_BY_ID.c,
-    cs: LANGUAGE_BY_ID.csharp,
-    go: LANGUAGE_BY_ID.go,
-    rs: LANGUAGE_BY_ID.rust,
-    rb: LANGUAGE_BY_ID.ruby,
-    php: LANGUAGE_BY_ID.php,
-    swift: LANGUAGE_BY_ID.swift,
-    kt: LANGUAGE_BY_ID.kotlin,
-    html: LANGUAGE_BY_ID.html,
-    css: LANGUAGE_BY_ID.css,
-    scss: LANGUAGE_BY_ID.scss,
-    json: LANGUAGE_BY_ID.json,
-    md: LANGUAGE_BY_ID.markdown,
-    yaml: LANGUAGE_BY_ID.yaml,
-    yml: LANGUAGE_BY_ID.yaml,
-    xml: LANGUAGE_BY_ID.xml,
-    sql: LANGUAGE_BY_ID.sql,
-    sh: LANGUAGE_BY_ID.shellscript,
-    bash: languageMeta("Bash", "bash"),
-    ps1: LANGUAGE_BY_ID.powershell,
-    toml: LANGUAGE_BY_ID.toml,
-    ini: LANGUAGE_BY_ID.ini,
-    vue: LANGUAGE_BY_ID.vue,
-    svelte: LANGUAGE_BY_ID.svelte,
-    jsx: LANGUAGE_BY_ID.javascriptreact,
-    tsx: LANGUAGE_BY_ID.typescriptreact,
-    graphql: LANGUAGE_BY_ID.graphql,
-    lua: LANGUAGE_BY_ID.lua,
-    dart: LANGUAGE_BY_ID.dart,
-    r: LANGUAGE_BY_ID.r,
-    ex: LANGUAGE_BY_ID.elixir,
-    exs: LANGUAGE_BY_ID.elixir,
-    erl: LANGUAGE_BY_ID.erlang,
-    hs: LANGUAGE_BY_ID.haskell,
-    clj: LANGUAGE_BY_ID.clojure,
-    scala: LANGUAGE_BY_ID.scala,
-    sol: LANGUAGE_BY_ID.solidity,
-    tf: LANGUAGE_BY_ID.terraform,
-    hcl: LANGUAGE_BY_ID.hcl,
-};
+let catalog: AssetCatalogLoader;
+let catalogDisposed = false;
 
 let rpc: SimpleDiscordRPC | null = null;
 let startTime: number = Date.now();
@@ -147,30 +33,7 @@ let statusBarItem: vscode.StatusBarItem;
 let reconnectEnabled = true;
 
 function getLanguageMeta(document: vscode.TextDocument): LanguageMeta {
-    const fileName = document.fileName;
-    const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
-    const known = LANGUAGE_BY_EXTENSION[ext] ?? LANGUAGE_BY_ID[document.languageId];
-    if (known) return known;
-
-    const fallbackName = document.languageId !== "plaintext"
-        ? document.languageId
-        : ext || "Unknown";
-
-    return {
-        name: fallbackName.charAt(0).toUpperCase() + fallbackName.slice(1),
-        assetKey: "code",
-        outlineAssetKey: "code-outline",
-    };
-}
-
-function getEditorMeta(): EditorMeta {
-    const appName = vscode.env.appName;
-    const isCursor = appName.toLowerCase().includes("cursor") ||
-        vscode.env.uriScheme.toLowerCase().includes("cursor");
-
-    return isCursor
-        ? { name: "Cursor", assetKey: "cube_2d_dark", embeddedKey: "cursor" }
-        : { name: "Visual Studio Code", assetKey: "vscode-alt", embeddedKey: "vscode" };
+    return resolveLanguage(catalog?.manifest ?? BUNDLED_MANIFEST, document.fileName, document.languageId);
 }
 
 const MESSAGES = {
@@ -250,38 +113,9 @@ function updateStatusBar(text: string) {
 }
 
 function getActivityAssets(language: LanguageMeta, config: PresenceConfig) {
-    const editor = getEditorMeta();
-    const largeImage = config.largeImageMode === "editor"
-        ? editor.assetKey
-        : config.largeImageMode === "languageLogo"
-            ? language.logoAssetKey ?? language.assetKey
-            : config.largeImageMode === "languageTextEditor"
-                ? `${language.assetKey}-${editor.embeddedKey}`
-            : config.largeImageMode === "languageOutlineEditor"
-                ? `${language.outlineAssetKey}-${editor.embeddedKey}`
-            : config.largeImageMode === "languageOutline"
-                ? language.outlineAssetKey
-            : language.assetKey;
-    const largeText = config.largeImageMode === "editor"
-        ? editor.name
-        : language.name.length >= 2 ? language.name : `${language.name} language`;
-
-    const assets: Record<string, string> = {
-        large_image: largeImage,
-        large_text: largeText,
-    };
-
-    if (
-        config.largeImageMode !== "editor" &&
-        config.largeImageMode !== "languageTextEditor" &&
-        config.largeImageMode !== "languageOutlineEditor" &&
-        config.showSmallEditorIcon
-    ) {
-        assets.small_image = editor.assetKey;
-        assets.small_text = editor.name;
-    }
-
-    return assets;
+    const manifest = catalog?.manifest ?? BUNDLED_MANIFEST;
+    const editor = resolveEditor(manifest, vscode.env.appName, vscode.env.uriScheme);
+    return activityAssets(manifest, language, editor, config.largeImageMode, config.showSmallEditorIcon);
 }
 
 async function setActivity(
@@ -388,7 +222,7 @@ async function connectRpc() {
         rpc = null;
     }
 
-    rpc = new SimpleDiscordRPC(CURSOR_APP_ID);
+    rpc = new SimpleDiscordRPC(DISCORD_APPLICATION_ID);
 
     rpc.on("ready", async () => {
         const user = rpc?.getUser();
@@ -405,7 +239,7 @@ async function connectRpc() {
     });
 
     rpc.on("error", (err: Error) => {
-        console.error("Cursor Discord RPC error:", err.message);
+        console.error("Discord Coding Presence RPC error:", err.message);
     });
 
     try {
@@ -427,11 +261,19 @@ function scheduleReconnect() {
 }
 
 export async function activate(context: vscode.ExtensionContext) {
+    catalogDisposed = false;
+    catalog = new AssetCatalogLoader(context.globalState);
+    const refreshCatalog = async () => {
+        if (catalogDisposed || !getConfig().enabled) return;
+        if (await catalog.refresh() && !catalogDisposed && reconnectEnabled) await updatePresence();
+    };
+    const catalogTimer = setInterval(() => { void refreshCatalog(); }, CATALOG_REFRESH_MS);
+    context.subscriptions.push({ dispose: () => { catalogDisposed = true; clearInterval(catalogTimer); } });
     statusBarItem = vscode.window.createStatusBarItem(
         vscode.StatusBarAlignment.Left,
         0
     );
-    statusBarItem.tooltip = "Cursor Discord RPC";
+    statusBarItem.tooltip = "Discord Coding Presence";
     statusBarItem.command = "cursorDiscord.openSettings";
     context.subscriptions.push(statusBarItem);
     statusBarItem.show();
@@ -440,6 +282,7 @@ export async function activate(context: vscode.ExtensionContext) {
     updateStatusBar(initialConfig.enabled
         ? message("connecting", initialConfig)
         : message("disabled", initialConfig));
+    void refreshCatalog();
     await connectRpc();
 
     context.subscriptions.push(
@@ -477,6 +320,7 @@ export async function activate(context: vscode.ExtensionContext) {
             }
 
             reconnectEnabled = true;
+            void refreshCatalog();
 
             if (!rpc || !rpc.isConnected()) {
                 await connectRpc();
@@ -518,6 +362,7 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 export async function deactivate() {
+    catalogDisposed = true;
     reconnectEnabled = false;
     if (throttleTimer) clearTimeout(throttleTimer);
     if (rpc) {

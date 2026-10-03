@@ -4,13 +4,14 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "rich-presence-paths.ps1")
 Add-Type -AssemblyName System.Drawing
 
 $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 $richDirectory = Join-Path $repoRoot "src\image\rich-presence"
 $vscodeReference = Join-Path $PSScriptRoot "assets\editor-logos\vscode-reference.png"
 $cursorReference = Join-Path $PSScriptRoot "assets\editor-logos\cursor-reference.png"
-$taxcodeReference = Join-Path $OutputDirectory "sources\taxcode-icon.png"
+$taxcodeReference = Join-Path $richDirectory "editors\taxcode\iconwhite.png"
 $background = [System.Drawing.ColorTranslator]::FromHtml("#090808")
 $panel = [System.Drawing.ColorTranslator]::FromHtml("#111318")
 $muted = [System.Drawing.ColorTranslator]::FromHtml("#9CA3AF")
@@ -155,10 +156,10 @@ function Draw-ReferenceLogo {
             $Graphics.DrawImage(
                 $image,
                 $Destination,
-                180,
-                100,
-                680,
-                780,
+                0,
+                0,
+                $image.Width,
+                $image.Height,
                 [System.Drawing.GraphicsUnit]::Pixel
             )
         }
@@ -246,32 +247,10 @@ function Draw-EditorBadge {
             $Rectangle.Height - 28
         )
 
-        if ($Editor -eq "taxcode") {
-            $clipPath = if ($Style -eq "oval") {
-                $ellipse = [System.Drawing.Drawing2D.GraphicsPath]::new()
-                $ellipse.AddEllipse($logoRect)
-                $ellipse
-            }
-            else {
-                New-RoundedRectanglePath -Rectangle ([System.Drawing.RectangleF]$logoRect) -Radius 14
-            }
-            try {
-                $Graphics.SetClip($clipPath)
-                Draw-ReferenceLogo -Graphics $Graphics -Editor $Editor -Destination $logoRect
-            }
-            finally {
-                $Graphics.Restore($state)
-                $clipPath.Dispose()
-            }
-        }
-        else {
-            Draw-ReferenceLogo -Graphics $Graphics -Editor $Editor -Destination $logoRect
-        }
+        Draw-ReferenceLogo -Graphics $Graphics -Editor $Editor -Destination $logoRect
     }
     finally {
-        if ($Editor -ne "taxcode") {
-            $Graphics.Restore($state)
-        }
+        $Graphics.Restore($state)
     }
 }
 
@@ -285,7 +264,7 @@ function New-EditorMockup {
 
     $canvas = New-RichPresenceCanvas
     $graphics = $canvas.Graphics
-    $languageImage = [System.Drawing.Image]::FromFile((Join-Path $richDirectory "javascript.png"))
+    $languageImage = [System.Drawing.Image]::FromFile((Join-Path $richDirectory (Get-RichPresenceAssetPath "javascript")))
     try {
         if ($Style -eq "flat") {
             $graphics.DrawImage($languageImage, [System.Drawing.Rectangle]::new(0, 0, 1024, 1024))
@@ -338,7 +317,8 @@ function New-MainShowcase {
         try {
             $graphics.FillPath($fill, $path)
             $graphics.DrawPath($border, $path)
-            $image = [System.Drawing.Image]::FromFile((Join-Path $richDirectory $cards[$i].File))
+            $assetKey = [System.IO.Path]::GetFileNameWithoutExtension($cards[$i].File)
+            $image = [System.Drawing.Image]::FromFile((Join-Path $richDirectory (Get-RichPresenceAssetPath $assetKey)))
             try {
                 $graphics.DrawImage($image, [System.Drawing.Rectangle]::new($x + 50, 225, 340, 340))
             }

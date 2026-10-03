@@ -3,6 +3,7 @@
 src/**
 node_modules/**
 scripts/**
+tests/**
 *.log
 tsconfig.json
 .gitignore

@@ -1,0 +1,323 @@
+{
+  "schemaVersion": 1,
+  "languages": {
+    "javascript": {
+      "name": "JavaScript",
+      "assetKey": "javascript",
+      "outlineAssetKey": "javascript-outline",
+      "logoAssetKey": "javascript-logo"
+    },
+    "typescript": {
+      "name": "TypeScript",
+      "assetKey": "typescript",
+      "outlineAssetKey": "typescript-outline",
+      "logoAssetKey": "typescript-logo"
+    },
+    "python": {
+      "name": "Python",
+      "assetKey": "python",
+      "outlineAssetKey": "python-outline",
+      "logoAssetKey": "python-logo"
+    },
+    "java": {
+      "name": "Java",
+      "assetKey": "java",
+      "outlineAssetKey": "java-outline",
+      "logoAssetKey": "java-logo"
+    },
+    "cpp": {
+      "name": "C++",
+      "assetKey": "cpp",
+      "outlineAssetKey": "cpp-outline",
+      "logoAssetKey": "cpp-logo"
+    },
+    "c": {
+      "name": "C",
+      "assetKey": "c",
+      "outlineAssetKey": "c-outline",
+      "logoAssetKey": "c-logo"
+    },
+    "csharp": {
+      "name": "C#",
+      "assetKey": "csharp",
+      "outlineAssetKey": "csharp-outline",
+      "logoAssetKey": "csharp-logo"
+    },
+    "go": {
+      "name": "Go",
+      "assetKey": "go",
+      "outlineAssetKey": "go-outline",
+      "logoAssetKey": "go-logo"
+    },
+    "rust": {
+      "name": "Rust",
+      "assetKey": "rust",
+      "outlineAssetKey": "rust-outline",
+      "logoAssetKey": "rust-logo"
+    },
+    "ruby": {
+      "name": "Ruby",
+      "assetKey": "ruby",
+      "outlineAssetKey": "ruby-outline",
+      "logoAssetKey": "ruby-logo"
+    },
+    "php": {
+      "name": "PHP",
+      "assetKey": "php",
+      "outlineAssetKey": "php-outline",
+      "logoAssetKey": "php-logo"
+    },
+    "swift": {
+      "name": "Swift",
+      "assetKey": "swift",
+      "outlineAssetKey": "swift-outline",
+      "logoAssetKey": "swift-logo"
+    },
+    "kotlin": {
+      "name": "Kotlin",
+      "assetKey": "kotlin",
+      "outlineAssetKey": "kotlin-outline",
+      "logoAssetKey": "kotlin-logo"
+    },
+    "html": {
+      "name": "HTML",
+      "assetKey": "html",
+      "outlineAssetKey": "html-outline",
+      "logoAssetKey": "html-logo"
+    },
+    "css": {
+      "name": "CSS",
+      "assetKey": "css",
+      "outlineAssetKey": "css-outline",
+      "logoAssetKey": "css-logo"
+    },
+    "scss": {
+      "name": "SCSS",
+      "assetKey": "scss",
+      "outlineAssetKey": "scss-outline",
+      "logoAssetKey": "scss-logo"
+    },
+    "json": {
+      "name": "JSON",
+      "assetKey": "json",
+      "outlineAssetKey": "json-outline",
+      "logoAssetKey": "json-logo"
+    },
+    "markdown": {
+      "name": "Markdown",
+      "assetKey": "markdown",
+      "outlineAssetKey": "markdown-outline",
+      "logoAssetKey": "markdown-logo"
+    },
+    "yaml": {
+      "name": "YAML",
+      "assetKey": "yaml",
+      "outlineAssetKey": "yaml-outline",
+      "logoAssetKey": "yaml-logo"
+    },
+    "xml": {
+      "name": "XML",
+      "assetKey": "xml",
+      "outlineAssetKey": "xml-outline",
+      "logoAssetKey": "xml-logo"
+    },
+    "sql": {
+      "name": "SQL",
+      "assetKey": "sql",
+      "outlineAssetKey": "sql-outline",
+      "logoAssetKey": "sql-logo"
+    },
+    "shellscript": {
+      "name": "Shell",
+      "assetKey": "shell",
+      "outlineAssetKey": "shell-outline",
+      "logoAssetKey": "shell-logo"
+    },
+    "powershell": {
+      "name": "PowerShell",
+      "assetKey": "powershell",
+      "outlineAssetKey": "powershell-outline",
+      "logoAssetKey": "powershell-logo"
+    },
+    "dockerfile": {
+      "name": "Docker",
+      "assetKey": "docker",
+      "outlineAssetKey": "docker-outline",
+      "logoAssetKey": "docker-logo"
+    },
+    "toml": {
+      "name": "TOML",
+      "assetKey": "toml",
+      "outlineAssetKey": "toml-outline"
+    },
+    "ini": {
+      "name": "INI",
+      "assetKey": "ini",
+      "outlineAssetKey": "ini-outline"
+    },
+    "vue": {
+      "name": "Vue",
+      "assetKey": "vue",
+      "outlineAssetKey": "vue-outline",
+      "logoAssetKey": "vue-logo"
+    },
+    "svelte": {
+      "name": "Svelte",
+      "assetKey": "svelte",
+      "outlineAssetKey": "svelte-outline",
+      "logoAssetKey": "svelte-logo"
+    },
+    "javascriptreact": {
+      "name": "React JSX",
+      "assetKey": "react",
+      "outlineAssetKey": "react-outline",
+      "logoAssetKey": "react-logo"
+    },
+    "typescriptreact": {
+      "name": "React TSX",
+      "assetKey": "react",
+      "outlineAssetKey": "react-outline",
+      "logoAssetKey": "react-logo"
+    },
+    "graphql": {
+      "name": "GraphQL",
+      "assetKey": "graphql",
+      "outlineAssetKey": "graphql-outline",
+      "logoAssetKey": "graphql-logo"
+    },
+    "lua": {
+      "name": "Lua",
+      "assetKey": "lua",
+      "outlineAssetKey": "lua-outline",
+      "logoAssetKey": "lua-logo"
+    },
+    "dart": {
+      "name": "Dart",
+      "assetKey": "dart",
+      "outlineAssetKey": "dart-outline",
+      "logoAssetKey": "dart-logo"
+    },
+    "r": {
+      "name": "R",
+      "assetKey": "r",
+      "outlineAssetKey": "r-outline",
+      "logoAssetKey": "r-logo"
+    },
+    "elixir": {
+      "name": "Elixir",
+      "assetKey": "elixir",
+      "outlineAssetKey": "elixir-outline",
+      "logoAssetKey": "elixir-logo"
+    },
+    "erlang": {
+      "name": "Erlang",
+      "assetKey": "erlang",
+      "outlineAssetKey": "erlang-outline",
+      "logoAssetKey": "erlang-logo"
+    },
+    "haskell": {
+      "name": "Haskell",
+      "assetKey": "haskell",
+      "outlineAssetKey": "haskell-outline",
+      "logoAssetKey": "haskell-logo"
+    },
+    "clojure": {
+      "name": "Clojure",
+      "assetKey": "clojure",
+      "outlineAssetKey": "clojure-outline",
+      "logoAssetKey": "clojure-logo"
+    },
+    "scala": {
+      "name": "Scala",
+      "assetKey": "scala",
+      "outlineAssetKey": "scala-outline",
+      "logoAssetKey": "scala-logo"
+    },
+    "solidity": {
+      "name": "Solidity",
+      "assetKey": "solidity",
+      "outlineAssetKey": "solidity-outline",
+      "logoAssetKey": "solidity-logo"
+    },
+    "terraform": {
+      "name": "Terraform",
+      "assetKey": "terraform",
+      "outlineAssetKey": "terraform-outline",
+      "logoAssetKey": "terraform-logo"
+    },
+    "hcl": {
+      "name": "HCL",
+      "assetKey": "hcl",
+      "outlineAssetKey": "hcl-outline"
+    },
+    "bash": {
+      "name": "Bash",
+      "assetKey": "bash",
+      "outlineAssetKey": "bash-outline",
+      "logoAssetKey": "bash-logo"
+    }
+  },
+  "extensions": {
+    "js": "javascript",
+    "ts": "typescript",
+    "py": "python",
+    "java": "java",
+    "cpp": "cpp",
+    "c": "c",
+    "cs": "csharp",
+    "go": "go",
+    "rs": "rust",
+    "rb": "ruby",
+    "php": "php",
+    "swift": "swift",
+    "kt": "kotlin",
+    "html": "html",
+    "css": "css",
+    "scss": "scss",
+    "json": "json",
+    "md": "markdown",
+    "yaml": "yaml",
+    "yml": "yaml",
+    "xml": "xml",
+    "sql": "sql",
+    "sh": "shellscript",
+    "ps1": "powershell",
+    "toml": "toml",
+    "ini": "ini",
+    "vue": "vue",
+    "svelte": "svelte",
+    "jsx": "javascriptreact",
+    "tsx": "typescriptreact",
+    "graphql": "graphql",
+    "lua": "lua",
+    "dart": "dart",
+    "r": "r",
+    "ex": "elixir",
+    "exs": "elixir",
+    "erl": "erlang",
+    "hs": "haskell",
+    "clj": "clojure",
+    "scala": "scala",
+    "sol": "solidity",
+    "tf": "terraform",
+    "hcl": "hcl",
+    "bash": "bash"
+  },
+  "editors": {
+    "vscode": {
+      "name": "Visual Studio Code",
+      "assetKey": "vscode-alt",
+      "embeddedKey": "vscode"
+    },
+    "cursor": {
+      "name": "Cursor",
+      "assetKey": "cube_2d_dark",
+      "embeddedKey": "cursor"
+    },
+    "taxcode": {
+      "name": "TaxCode",
+      "assetKey": "taxcode",
+      "embeddedKey": "taxcode"
+    }
+  }
+}
