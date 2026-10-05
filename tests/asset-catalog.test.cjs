@@ -28,10 +28,10 @@ test('every manifest image exists, has the correct hash, and lives in its own ca
     assert.equal(fs.readdirSync(root).filter(file => file.endsWith('.png')).length, 0);
 });
 
-test('all six modes work for every language and all three editors', () => {
+test('all ten modes work for every language and all three editors', () => {
     for (const language of [...Object.values(manifest.languages), CODE_META]) {
         for (const editor of Object.values(manifest.editors)) {
-            for (const mode of ['editor', 'languageText', 'languageTextEditor', 'languageOutline', 'languageOutlineEditor', 'languageLogo']) {
+            for (const mode of ['editor', 'languageText', 'languageTextEditor', 'languageOutline', 'languageOutlineEditor', 'languageLogo', 'languageMono', 'languageMonoEditor', 'languageCard', 'languageCardEditor']) {
                 const assets = activityAssets(manifest, language, editor, mode, true);
                 for (const field of ['large_image', 'small_image']) {
                     if (!assets[field]) continue;
@@ -39,7 +39,7 @@ test('all six modes work for every language and all three editors', () => {
                     const relative = assets[field].slice(ASSET_BASE_URL.length).split('?')[0];
                     assert.ok(fs.existsSync(path.join(root, relative)), relative);
                 }
-                const embedded = mode === 'languageTextEditor' || mode === 'languageOutlineEditor';
+                const embedded = ['languageTextEditor', 'languageOutlineEditor', 'languageMonoEditor', 'languageCardEditor'].includes(mode);
                 assert.equal(!!assets.small_image, mode !== 'editor' && !embedded);
                 if (embedded) assert.ok(assets.large_image.includes(`/editors/${editor.embeddedKey}/`));
                 assert.equal(activityAssets(manifest, language, editor, mode, false).small_image, undefined);
@@ -52,6 +52,9 @@ test('extension precedence, language IDs, unknown languages, and editor detectio
     assert.equal(resolveLanguage(manifest, 'file.TSX', 'typescript').name, 'React TSX');
     assert.equal(resolveLanguage(manifest, 'Dockerfile', 'dockerfile').name, 'Docker');
     assert.equal(resolveLanguage(manifest, 'file.bash', 'shellscript').name, 'Bash');
+    assert.equal(resolveLanguage(manifest, 'file.m', 'objective-c').name, 'Objective-C');
+    assert.equal(resolveLanguage(manifest, 'file.m', 'matlab').name, 'Matlab');
+    assert.equal(resolveLanguage(manifest, 'shader.fs', 'glsl').name, 'Glsl');
     assert.equal(resolveLanguage(manifest, 'file.xyz', 'newlang').assetKey, 'code');
     assert.equal(resolveLanguage(manifest, 'constructor', 'constructor').assetKey, 'code');
     assert.equal(resolveEditor(manifest, 'TaxCode', 'vscode').embeddedKey, 'taxcode');

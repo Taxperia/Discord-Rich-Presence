@@ -255,6 +255,84 @@
       "assetKey": "bash",
       "outlineAssetKey": "bash-outline",
       "logoAssetKey": "bash-logo"
+    },
+    "zig": {
+      "name": "Zig",
+      "assetKey": "zig",
+      "outlineAssetKey": "zig-outline",
+      "logoAssetKey": "zig-logo"
+    },
+    "julia": {
+      "name": "Julia",
+      "assetKey": "julia",
+      "outlineAssetKey": "julia-outline",
+      "logoAssetKey": "julia-logo"
+    },
+    "fsharp": {
+      "name": "F#",
+      "assetKey": "fsharp",
+      "outlineAssetKey": "fsharp-outline",
+      "logoAssetKey": "fsharp-logo"
+    },
+    "objective-c": {
+      "name": "Objective-C",
+      "assetKey": "objectivec",
+      "outlineAssetKey": "objectivec-outline",
+      "logoAssetKey": "objectivec-logo"
+    },
+    "objective-cpp": {
+      "name": "Objective-C++",
+      "assetKey": "objectivec",
+      "outlineAssetKey": "objectivec-outline",
+      "logoAssetKey": "objectivec-logo"
+    },
+    "perl": {
+      "name": "Perl",
+      "assetKey": "perl",
+      "outlineAssetKey": "perl-outline",
+      "logoAssetKey": "perl-logo"
+    },
+    "groovy": {
+      "name": "Groovy",
+      "assetKey": "groovy",
+      "outlineAssetKey": "groovy-outline",
+      "logoAssetKey": "groovy-logo"
+    },
+    "ocaml": {
+      "name": "OCaml",
+      "assetKey": "ocaml",
+      "outlineAssetKey": "ocaml-outline",
+      "logoAssetKey": "ocaml-logo"
+    },
+    "nim": {
+      "name": "Nim",
+      "assetKey": "nim",
+      "outlineAssetKey": "nim-outline",
+      "logoAssetKey": "nim-logo"
+    },
+    "fortran": {
+      "name": "Fortran",
+      "assetKey": "fortran",
+      "outlineAssetKey": "fortran-outline",
+      "logoAssetKey": "fortran-logo"
+    },
+    "vb": {
+      "name": "Visual Basic",
+      "assetKey": "visualbasic",
+      "outlineAssetKey": "visualbasic-outline",
+      "logoAssetKey": "visualbasic-logo"
+    },
+    "crystal": {
+      "name": "Crystal",
+      "assetKey": "crystal",
+      "outlineAssetKey": "crystal-outline",
+      "logoAssetKey": "crystal-logo"
+    },
+    "cobol": {
+      "name": "COBOL",
+      "assetKey": "cobol",
+      "outlineAssetKey": "cobol-outline",
+      "logoAssetKey": "cobol-logo"
     }
   },
   "extensions": {
@@ -301,7 +379,29 @@
     "sol": "solidity",
     "tf": "terraform",
     "hcl": "hcl",
-    "bash": "bash"
+    "bash": "bash",
+    "zig": "zig",
+    "jl": "julia",
+    "fs": "fsharp",
+    "fsx": "fsharp",
+    "m": "objective-c",
+    "mm": "objective-cpp",
+    "pl": "perl",
+    "pm": "perl",
+    "groovy": "groovy",
+    "gvy": "groovy",
+    "gy": "groovy",
+    "ml": "ocaml",
+    "mli": "ocaml",
+    "nim": "nim",
+    "f": "fortran",
+    "f90": "fortran",
+    "f95": "fortran",
+    "f03": "fortran",
+    "vb": "vb",
+    "cr": "crystal",
+    "cob": "cobol",
+    "cbl": "cobol"
   },
   "editors": {
     "vscode": {

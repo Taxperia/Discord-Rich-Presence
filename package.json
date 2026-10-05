@@ -2,7 +2,7 @@
   "name": "cursor-presence",
   "displayName": "%extension.displayName%",
   "description": "%extension.description%",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "publisher": "Taxperia",
   "repository": {
     "type": "git",
@@ -89,7 +89,11 @@
             "languageTextEditor",
             "languageOutline",
             "languageOutlineEditor",
-            "languageLogo"
+            "languageLogo",
+            "languageMono",
+            "languageMonoEditor",
+            "languageCard",
+            "languageCardEditor"
           ],
           "enumDescriptions": [
             "%config.largeImageMode.editor%",
@@ -97,7 +101,11 @@
             "%config.largeImageMode.languageTextEditor%",
             "%config.largeImageMode.languageOutline%",
             "%config.largeImageMode.languageOutlineEditor%",
-            "%config.largeImageMode.languageLogo%"
+            "%config.largeImageMode.languageLogo%",
+            "%config.largeImageMode.languageMono%",
+            "%config.largeImageMode.languageMonoEditor%",
+            "%config.largeImageMode.languageCard%",
+            "%config.largeImageMode.languageCardEditor%"
           ],
           "description": "%config.largeImageMode%"
         },

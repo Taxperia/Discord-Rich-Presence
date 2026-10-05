@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.1.6] - 2026-10-05
+
+### Added
+
+- Add Neon Mono and geometric Tech Card artwork, each with plain and embedded-editor modes.
+- Add Zig, Julia, F#, Objective-C, Objective-C++, Perl, Groovy, OCaml, Nim, Fortran, Visual Basic, Crystal, and COBOL detection.
+- Add matching filled, outline, logo, Neon Mono, Tech Card, Cursor, VS Code, and TaxCode artwork for the new languages.
+- Add an AI-assisted Tech Card design study and deterministic artwork generator based on the supplied reference.
+
+### Improved
+
+- Expand Rich Presence from six to ten artwork modes and from 43 to 56 language IDs.
+- Prefer editor language IDs for ambiguous `.m` and `.fs` extensions while preserving specific extension mappings such as JSX, TSX, and Bash.
+- Expand catalog selection and integrity tests across all ten modes and all three editors.
+
 ## [1.1.5] - 2026-10-05
 
 ### Added

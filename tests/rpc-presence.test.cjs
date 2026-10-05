@@ -87,11 +87,14 @@ test('idle tracker resets, fires once, and can be disabled', () => {
     tracker.dispose();
 });
 
-test('1.1.5 manifest exposes privacy, idle, and quick-control settings', () => {
+test('1.1.6 manifest exposes artwork, privacy, idle, and quick-control settings', () => {
     const manifest = require('../package.json');
     const properties = manifest.contributes.configuration.properties;
     const commands = manifest.contributes.commands.map(command => command.command);
-    assert.equal(manifest.version, '1.1.5');
+    assert.equal(manifest.version, '1.1.6');
+    for (const mode of ['languageMono', 'languageMonoEditor', 'languageCard', 'languageCardEditor']) {
+        assert.ok(properties['cursorDiscord.largeImageMode'].enum.includes(mode), mode);
+    }
     assert.equal(properties['cursorDiscord.idleTimeout'].default, 300);
     assert.equal(properties['cursorDiscord.idleBehavior'].default, 'idle');
     assert.equal(properties['cursorDiscord.hideSensitiveFiles'].default, true);

@@ -12,6 +12,8 @@ $canvasSize = 512
 $background = [System.Drawing.ColorTranslator]::FromHtml("#090808")
 $fontFamily = [System.Drawing.FontFamily]::new("Arial Black")
 $fontStyle = [System.Drawing.FontStyle]::Regular
+$monoFontFamily = [System.Drawing.FontFamily]::new("Consolas")
+$monoFontStyle = [System.Drawing.FontStyle]::Bold
 $deviconDirectory = Join-Path $PSScriptRoot "vendor\devicon"
 $deviconFontPath = Join-Path $deviconDirectory "devicon.ttf"
 $deviconCssPath = Join-Path $deviconDirectory "devicon.min.css"
@@ -63,7 +65,19 @@ $assets = @(
     @{ Key = "scala";      Text = "Scala";    Color = "#DC322F" },
     @{ Key = "solidity";   Text = "SOL";      Color = "#C8C8C8" },
     @{ Key = "terraform";  Text = "TF";       Color = "#844FBA" },
-    @{ Key = "hcl";        Text = "HCL";      Color = "#E6B422" }
+    @{ Key = "hcl";        Text = "HCL";      Color = "#E6B422" },
+    @{ Key = "zig";        Text = "Zig";      Color = "#F7A41D" },
+    @{ Key = "julia";      Text = "Julia";    Color = "#9558B2" },
+    @{ Key = "fsharp";     Text = "F#";       Color = "#378BBA" },
+    @{ Key = "objectivec"; Text = "Obj-C";    Color = "#438EFF" },
+    @{ Key = "perl";       Text = "Perl";     Color = "#39457E" },
+    @{ Key = "groovy";     Text = "Groovy";   Color = "#4298B8" },
+    @{ Key = "ocaml";      Text = "OCaml";    Color = "#EC6813" },
+    @{ Key = "nim";        Text = "Nim";      Color = "#FFE953" },
+    @{ Key = "fortran";    Text = "Fortran";  Color = "#734F96" },
+    @{ Key = "visualbasic"; Text = "VB";      Color = "#945DB7" },
+    @{ Key = "crystal";    Text = "Crystal";  Color = "#E6E6E6" },
+    @{ Key = "cobol";      Text = "COBOL";    Color = "#005CA5" }
 )
 
 $logoAssets = @(
@@ -105,7 +119,19 @@ $logoAssets = @(
     @{ Key = "clojure";    Class = "clojure-plain";          Color = "#5881D8" },
     @{ Key = "scala";      Class = "scala-plain";            Color = "#DC322F" },
     @{ Key = "solidity";   Class = "solidity-plain";         Color = "#C8C8C8" },
-    @{ Key = "terraform";  Class = "terraform-plain";        Color = "#844FBA" }
+    @{ Key = "terraform";  Class = "terraform-plain";        Color = "#844FBA" },
+    @{ Key = "zig";        Class = "zig-original";           Color = "#F7A41D" },
+    @{ Key = "julia";      Class = "julia-plain";            Color = "#9558B2" },
+    @{ Key = "fsharp";     Class = "fsharp-plain";           Color = "#378BBA" },
+    @{ Key = "objectivec"; Class = "objectivec-plain";       Color = "#438EFF" },
+    @{ Key = "perl";       Class = "perl-plain";             Color = "#39457E" },
+    @{ Key = "groovy";     Class = "groovy-plain";           Color = "#4298B8" },
+    @{ Key = "ocaml";      Class = "ocaml-plain";            Color = "#EC6813" },
+    @{ Key = "nim";        Class = "nim-plain";              Color = "#FFE953" },
+    @{ Key = "fortran";    Class = "fortran-original";       Color = "#734F96" },
+    @{ Key = "visualbasic"; Class = "visualbasic-plain";     Color = "#945DB7" },
+    @{ Key = "crystal";    Class = "crystal-original";       Color = "#E6E6E6" },
+    @{ Key = "cobol";      Class = "cobol-original";         Color = "#005CA5" }
 )
 
 New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
@@ -318,6 +344,180 @@ function New-OutlineTextAsset {
     Save-Canvas -Canvas $canvas -Name "$Name$suffix"
 }
 
+function Get-FittedFontSize {
+    param(
+        [System.Drawing.Graphics]$Graphics,
+        [string]$Text,
+        [System.Drawing.FontFamily]$Family,
+        [System.Drawing.FontStyle]$Style,
+        [single]$MaxWidth,
+        [single]$MaxHeight,
+        [single]$Maximum = 260.0
+    )
+
+    $low = 18.0
+    $high = [double]$Maximum
+    for ($i = 0; $i -lt 12; $i++) {
+        $size = ($low + $high) / 2.0
+        $font = [System.Drawing.Font]::new($Family, $size, $Style, [System.Drawing.GraphicsUnit]::Pixel)
+        try {
+            $bounds = $Graphics.MeasureString($Text, $font)
+            if ($bounds.Width -le $MaxWidth -and $bounds.Height -le $MaxHeight) { $low = $size }
+            else { $high = $size }
+        }
+        finally { $font.Dispose() }
+    }
+    return [single]$low
+}
+
+function New-NeonMonoAsset {
+    param(
+        [string]$Name,
+        [string]$Text,
+        [string]$Color,
+        [ValidateSet("", "cursor", "vscode", "taxcode")]
+        [string]$Editor = ""
+    )
+
+    $canvas = New-Canvas
+    $graphics = $canvas.Graphics
+    $accent = [System.Drawing.ColorTranslator]::FromHtml($Color)
+    $gridColor = [System.Drawing.Color]::FromArgb(24, $accent.R, $accent.G, $accent.B)
+    $gridPen = [System.Drawing.Pen]::new($gridColor, 1.0)
+    $cornerPen = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(150, $accent.R, $accent.G, $accent.B), 4.0)
+    $displayText = $Text.ToUpperInvariant()
+    $size = Get-FittedFontSize -Graphics $graphics -Text $displayText -Family $monoFontFamily -Style $monoFontStyle -MaxWidth 400 -MaxHeight 210 -Maximum 250
+    $format = [System.Drawing.StringFormat]::new([System.Drawing.StringFormat]::GenericTypographic)
+    $format.FormatFlags = $format.FormatFlags -bor [System.Drawing.StringFormatFlags]::NoWrap -bor [System.Drawing.StringFormatFlags]::NoClip
+    $path = [System.Drawing.Drawing2D.GraphicsPath]::new()
+    $glowPen = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(58, $accent.R, $accent.G, $accent.B), [Math]::Max(14.0, $size * 0.09))
+    $accentPen = [System.Drawing.Pen]::new($accent, [Math]::Max(3.0, $size * 0.018))
+    $fill = [System.Drawing.SolidBrush]::new([System.Drawing.Color]::FromArgb(246, 248, 255))
+    $glowPen.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
+    $accentPen.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
+
+    try {
+        for ($position = 48; $position -le 464; $position += 32) {
+            $graphics.DrawLine($gridPen, $position, 48, $position, 464)
+            $graphics.DrawLine($gridPen, 48, $position, 464, $position)
+        }
+        foreach ($segment in @(
+            @(50, 92, 50, 50), @(50, 50, 92, 50),
+            @(420, 50, 462, 50), @(462, 50, 462, 92),
+            @(50, 420, 50, 462), @(50, 462, 92, 462),
+            @(420, 462, 462, 462), @(462, 420, 462, 462)
+        )) { $graphics.DrawLine($cornerPen, $segment[0], $segment[1], $segment[2], $segment[3]) }
+
+        $path.AddString($displayText, $monoFontFamily, [int]$monoFontStyle, $size, [System.Drawing.PointF]::Empty, $format)
+        $bounds = $path.GetBounds()
+        $matrix = [System.Drawing.Drawing2D.Matrix]::new()
+        try {
+            $matrix.Translate([single]((($canvasSize - $bounds.Width) / 2.0) - $bounds.X), [single]((($canvasSize - $bounds.Height) / 2.0) - $bounds.Y))
+            $path.Transform($matrix)
+        }
+        finally { $matrix.Dispose() }
+        $graphics.DrawPath($glowPen, $path)
+        $graphics.DrawPath($accentPen, $path)
+        $graphics.FillPath($fill, $path)
+        if ($Editor) { Draw-EmbeddedEditorGlyph -Graphics $graphics -Editor $Editor }
+    }
+    finally {
+        $fill.Dispose()
+        $accentPen.Dispose()
+        $glowPen.Dispose()
+        $path.Dispose()
+        $format.Dispose()
+        $cornerPen.Dispose()
+        $gridPen.Dispose()
+    }
+
+    $suffix = if ($Editor) { "-mono-$Editor" } else { "-mono" }
+    Save-Canvas -Canvas $canvas -Name "$Name$suffix"
+}
+
+function New-TechCardAsset {
+    param(
+        [string]$Name,
+        [string]$Text,
+        [ValidateSet("", "cursor", "vscode", "taxcode")]
+        [string]$Editor = ""
+    )
+
+    $canvas = New-Canvas
+    $graphics = $canvas.Graphics
+    $blue = [System.Drawing.ColorTranslator]::FromHtml("#2F8CFF")
+    $navy = [System.Drawing.ColorTranslator]::FromHtml("#183558")
+    $muted = [System.Drawing.ColorTranslator]::FromHtml("#52647D")
+    $bluePen = [System.Drawing.Pen]::new($blue, 2.0)
+    $navyPen = [System.Drawing.Pen]::new($navy, 2.0)
+    $thinPen = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(150, $navy.R, $navy.G, $navy.B), 1.0)
+    $barPen = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(210, 18, 42, 72), 22.0)
+    $barPen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
+    $barPen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
+    $darkBrush = [System.Drawing.SolidBrush]::new([System.Drawing.Color]::FromArgb(230, 14, 27, 46))
+    $blueBrush = [System.Drawing.SolidBrush]::new($blue)
+    $mutedBrush = [System.Drawing.SolidBrush]::new($muted)
+    $whiteBrush = [System.Drawing.SolidBrush]::new([System.Drawing.Color]::FromArgb(246, 246, 248))
+    $fontSize = Get-FittedFontSize -Graphics $graphics -Text $Text -Family $fontFamily -Style $fontStyle -MaxWidth 400 -MaxHeight 178 -Maximum 210
+    $textFont = [System.Drawing.Font]::new($fontFamily, $fontSize, $fontStyle, [System.Drawing.GraphicsUnit]::Pixel)
+    $textFormat = [System.Drawing.StringFormat]::new()
+    $textFormat.Alignment = [System.Drawing.StringAlignment]::Center
+    $textFormat.LineAlignment = [System.Drawing.StringAlignment]::Center
+    $textFormat.FormatFlags = [System.Drawing.StringFormatFlags]::NoWrap
+
+    try {
+        $graphics.FillEllipse($darkBrush, -72, -88, 190, 190)
+        $graphics.DrawArc($bluePen, -76, -92, 222, 222, 5, 150)
+        $graphics.DrawEllipse($navyPen, 108, 72, 48, 48)
+        $graphics.DrawLine($barPen, 426, -8, 382, 36)
+        $graphics.DrawLine($barPen, 18, 420, -28, 466)
+
+        foreach ($offset in 0, 16, 32) {
+            $graphics.DrawLine($thinPen, 390 + $offset, 44, 470 + $offset, -36)
+            $graphics.DrawLine($thinPen, -24 + $offset, 438, 66 + $offset, 348)
+        }
+        $graphics.DrawLine($bluePen, 426, 70, 486, 10)
+        $graphics.DrawLine($bluePen, 22, 486, 88, 420)
+        $graphics.DrawArc($navyPen, 248, 414, 188, 188, 195, 150)
+
+        foreach ($origin in @(@(302, 44), @(150, 430))) {
+            for ($row = 0; $row -lt 3; $row++) {
+                for ($column = 0; $column -lt 4; $column++) {
+                    $brush = if (($row + $column) % 3 -eq 0) { $blueBrush } else { $mutedBrush }
+                    $graphics.FillEllipse($brush, $origin[0] + ($column * 17), $origin[1] + ($row * 17), 5, 5)
+                }
+            }
+        }
+
+        foreach ($plus in @(@(38, 164), @(466, 144), @(468, 356))) {
+            $graphics.DrawLine($bluePen, $plus[0] - 10, $plus[1], $plus[0] + 10, $plus[1])
+            $graphics.DrawLine($bluePen, $plus[0], $plus[1] - 10, $plus[0], $plus[1] + 10)
+        }
+        $graphics.FillEllipse($blueBrush, 168, 54, 10, 10)
+        $graphics.FillEllipse($mutedBrush, 198, 88, 7, 7)
+        $graphics.DrawEllipse($bluePen, 378, 390, 18, 18)
+
+        $layout = [System.Drawing.RectangleF]::new(52, 154, 408, 204)
+        $graphics.DrawString($Text, $textFont, $whiteBrush, $layout, $textFormat)
+        if ($Editor) { Draw-EmbeddedEditorGlyph -Graphics $graphics -Editor $Editor }
+    }
+    finally {
+        $textFormat.Dispose()
+        $textFont.Dispose()
+        $whiteBrush.Dispose()
+        $mutedBrush.Dispose()
+        $blueBrush.Dispose()
+        $darkBrush.Dispose()
+        $barPen.Dispose()
+        $thinPen.Dispose()
+        $navyPen.Dispose()
+        $bluePen.Dispose()
+    }
+
+    $suffix = if ($Editor) { "-card-$Editor" } else { "-card" }
+    Save-Canvas -Canvas $canvas -Name "$Name$suffix"
+}
+
 function New-LogoAsset {
     param(
         [string]$Name,
@@ -473,6 +673,14 @@ foreach ($asset in $assets) {
     New-OutlineTextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "cursor"
     New-OutlineTextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "vscode"
     New-OutlineTextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "taxcode"
+    New-NeonMonoAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color
+    New-NeonMonoAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "cursor"
+    New-NeonMonoAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "vscode"
+    New-NeonMonoAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "taxcode"
+    New-TechCardAsset -Name $asset.Key -Text $asset.Text
+    New-TechCardAsset -Name $asset.Key -Text $asset.Text -Editor "cursor"
+    New-TechCardAsset -Name $asset.Key -Text $asset.Text -Editor "vscode"
+    New-TechCardAsset -Name $asset.Key -Text $asset.Text -Editor "taxcode"
 }
 
 if (-not (Test-Path -LiteralPath $deviconFontPath) -or -not (Test-Path -LiteralPath $deviconCssPath)) {
@@ -501,4 +709,4 @@ New-EditorAssetFromReference -Name "vscode-alt" -ReferencePath $vscodeLogoRefere
 
 New-EditorAssetFromReference -Name "taxcode" -ReferencePath $taxcodeLogoReference
 
-Write-Output "Generated $(($assets.Count * 8) + $generatedLogoCount + 3) assets in $([System.IO.Path]::GetFullPath($OutputDirectory))"
+Write-Output "Generated $(($assets.Count * 16) + $generatedLogoCount + 3) assets in $([System.IO.Path]::GetFullPath($OutputDirectory))"

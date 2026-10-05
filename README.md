@@ -9,8 +9,8 @@ A VS Code / Cursor / TaxCode extension that shows your coding activity on Discor
 
 - Shows current file name on Discord
 - Shows workspace name
-- Detects and displays programming language (40+ languages)
-- Six artwork modes: editor logo, language text, language text with an embedded editor logo, outlined text, outlined text with an embedded editor logo, or language logo
+- Detects and displays programming language (50+ languages)
+- Ten artwork modes including filled text, outline, language logos, Neon Mono, and geometric Tech Cards with optional embedded editor logos
 - GitHub-hosted artwork and a cached, remotely refreshed language catalog
 - English and Turkish Rich Presence messages
 - Privacy mode and customizable Details / State text
@@ -33,6 +33,14 @@ The extension supports the following large-image settings:
 | `languageOutline` | Outlined language text |
 | `languageOutlineEditor` | Outlined language text with the editor icon in the corner |
 | `languageLogo` | Language logo, falling back to filled text if unavailable |
+| `languageMono` | Bright monospace text with a language-colored neon glow and coding grid |
+| `languageMonoEditor` | Neon Mono with the detected editor logo embedded in the corner |
+| `languageCard` | Black-and-blue geometric Tech Card with large white language text |
+| `languageCardEditor` | Tech Card with the detected editor logo embedded in the lower-right corner |
+
+| Neon Mono | Tech Card |
+|---|---|
+| ![Neon Mono JavaScript with Cursor](src/image/readme/neon-mono-javascript-cursor.png) | ![Tech Card Code with Visual Studio Code](src/image/readme/tech-card-code-vscode.png) |
 
 The optional small editor badge uses Discord's native `small_image` field.
 Discord controls its placement and shape. Embedded-icon modes omit that
@@ -60,7 +68,7 @@ taxcode --install-extension path/to/cursor-presence.vsix
 ```
 
 TaxCode is detected automatically using its application name or `taxcode` URI
-scheme. All six artwork modes use its white icon where an editor logo is shown.
+scheme. All ten artwork modes use its white icon where an editor logo is shown.
 No separate extension or Discord application ID is needed. Builds that disable
 third-party extensions must allow this extension before it can run.
 
@@ -84,7 +92,7 @@ TaxCode artwork and GitHub-hosted images are available starting with version
 |---------|---------|-------------|
 | `enabled` | `true` | Enable or disable Rich Presence |
 | `language` | `"auto"` | Use the editor language, English, or Turkish |
-| `largeImageMode` | `"languageText"` | Choose the editor logo, language text, filled or outlined text with an embedded editor logo, or language logo |
+| `largeImageMode` | `"languageText"` | Choose the editor logo, text, outline, language logo, Neon Mono, or Tech Card artwork |
 | `privacyMode` | `false` | Hide file and workspace names |
 | `showSmallEditorIcon` | `true` | Show the detected editor as Discord's small badge in compatible modes |
 | `showWorkspace` | `true` | Show workspace name on Discord |
@@ -118,7 +126,7 @@ private labels.
 
 ## Supported Languages
 
-JavaScript, TypeScript, Python, Java, C++, C, C#, Go, Rust, Ruby, PHP, Swift, Kotlin, HTML, CSS, SCSS, JSON, Markdown, YAML, XML, SQL, Shell, Bash, PowerShell, Docker, TOML, Vue, Svelte, JSX, TSX, Lua, Dart, R, Elixir, Haskell, Scala, Solidity, Terraform and more.
+JavaScript, TypeScript, Python, Java, C++, C, C#, Go, Rust, Ruby, PHP, Swift, Kotlin, HTML, CSS, SCSS, JSON, Markdown, YAML, XML, SQL, Shell, Bash, PowerShell, Docker, TOML, Vue, Svelte, JSX, TSX, Lua, Dart, R, Elixir, Haskell, Scala, Solidity, Terraform, Zig, Julia, F#, Objective-C, Objective-C++, Perl, Groovy, OCaml, Nim, Fortran, Visual Basic, Crystal, COBOL and more.
 
 ## Requirements
 

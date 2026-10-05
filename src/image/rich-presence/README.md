@@ -10,7 +10,7 @@ required. The Discord application ID is still used for the IPC connection.
 rich-presence/
   catalog.json                   # Editable language IDs, extensions and editors
   manifest.json                  # Generated catalog, image paths and hashes
-  default/                       # Filled language text: javascript.png, ...
+  default/                       # Filled text plus *-mono and *-card artwork
   logos/                         # Language logos: javascript.png, ...
   outline/                       # Styled/outlined font: javascript.png, ...
   editors/
@@ -32,7 +32,7 @@ The `outline` directory is the alternate font style. A native Discord small
 badge uses `editors/<editor>/icon.png`; Discord controls its circular shape.
 Embedded modes use the editor-specific images and omit that separate badge.
 TaxCode is detected from its app name or `taxcode` URI scheme. Plugin-enabled
-TaxCode editions use the same extension and all six artwork modes. The local
+TaxCode editions use the same extension and all ten artwork modes. The local
 UI extension host keeps Discord IPC on the desktop in remote workspaces too.
 
 | Setting | Image path example |
@@ -43,6 +43,10 @@ UI extension host keeps Discord IPC on the desktop in remote workspaces too.
 | languageOutline | outline/javascript.png |
 | languageTextEditor | editors/cursor/default/javascript.png |
 | languageOutlineEditor | editors/cursor/outline/javascript.png |
+| languageMono | default/javascript-mono.png |
+| languageMonoEditor | editors/cursor/default/javascript-mono.png |
+| languageCard | default/javascript-card.png |
+| languageCardEditor | editors/cursor/default/javascript-card.png |
 
 Logical keys such as `javascript-outline-cursor` remain in the catalog, but
 resolve to URLs instead of Developer Portal asset names. Languages without a
@@ -76,12 +80,13 @@ artwork so older cached manifests continue to work.
 
 ## Adding languages and artwork
 
-1. Add PNGs to the relevant folders. Filled and outlined base images are
-   required; logos and embedded editor variants are optional.
+1. Add PNGs to the relevant folders. Filled, outlined, Neon Mono and Tech Card
+   base images are generated for built-in languages; logos and embedded editor
+   variants are optional for manually added languages.
 2. Add the language ID to `catalog.json`, including its display name,
    `assetKey`, `outlineAssetKey` and optional `logoAssetKey`. Add file extension
-   mappings without the leading dot. Existing extension mappings take priority
-   over the editor's language ID.
+   mappings without the leading dot. Unambiguous extensions take priority;
+   ambiguous `.m` and `.fs` files prefer the editor's language ID.
 3. Run `npm run assets:manifest` to regenerate paths and SHA-256 hashes.
 4. Run `npm run assets:check` and `npm test`, then publish both the images and
    manifest to the public repository.
@@ -97,9 +102,15 @@ or changes to the manifest schema still require extension code changes.
 ## Generating artwork
 
 Run `npm run assets` to regenerate the built-in set with the #090808
-background and update the manifest. To make an additional language part of
+background and update the manifest. The Neon Mono design uses bold Consolas
+with a colored glow and grid. Tech Card deterministically recreates the
+black-and-blue geometric reference composition at 512x512. To make an
+additional language part of
 that generator, also add its text/color definition and optional logo glyph to
 scripts/generate-rich-presence-assets.ps1.
+
+The AI-generated design study used to guide the deterministic Tech Card
+renderer is stored at `scripts/assets/style-references/tech-card-ai-reference.png`.
 
 Logo glyphs use the MIT-licensed Devicon font. Its license and generator files
 are under scripts/vendor/devicon. Embedded Cursor and VS Code artwork comes

@@ -7,7 +7,7 @@ export type LanguageMeta = {
     outlineAssetKey: string;
 };
 export type EditorMeta = { name: string; assetKey: string; embeddedKey: string };
-export type LargeImageMode = "editor" | "languageText" | "languageTextEditor" | "languageOutline" | "languageOutlineEditor" | "languageLogo";
+export type LargeImageMode = "editor" | "languageText" | "languageTextEditor" | "languageOutline" | "languageOutlineEditor" | "languageLogo" | "languageMono" | "languageMonoEditor" | "languageCard" | "languageCardEditor";
 export type AssetManifest = {
     schemaVersion: 1;
     languages: Record<string, LanguageMeta>;
@@ -19,6 +19,7 @@ export type AssetManifest = {
 export const ASSET_BASE_URL = "https://raw.githubusercontent.com/Taxperia/Discord-Rich-Presence/master/src/image/rich-presence/";
 export const MANIFEST_URL = `${ASSET_BASE_URL}manifest.json`;
 export const CODE_META: LanguageMeta = { name: "Code", assetKey: "code", outlineAssetKey: "code-outline" };
+const AMBIGUOUS_EXTENSIONS = new Set(["m", "fs"]);
 const owns = (value: object, key: string) => Object.prototype.hasOwnProperty.call(value, key);
 const record = (value: unknown): value is Record<string, any> => !!value && typeof value === "object" && !Array.isArray(value);
 const key = (value: unknown): value is string => typeof value === "string" && /^[a-z0-9][a-z0-9_-]{0,79}$/.test(value);
@@ -53,8 +54,15 @@ export const BUNDLED_MANIFEST: AssetManifest = bundledManifest;
 
 export function resolveLanguage(manifest: AssetManifest, fileName: string, languageId: string): LanguageMeta {
     const extension = fileName.split(/[\\/]/).pop()?.split(".").pop()?.toLowerCase() ?? "";
-    const id = owns(manifest.extensions, extension) ? manifest.extensions[extension] : languageId;
-    if (owns(manifest.languages, id)) return manifest.languages[id];
+    const extensionId = owns(manifest.extensions, extension) ? manifest.extensions[extension] : undefined;
+    const knownLanguageId = owns(manifest.languages, languageId);
+    if (extensionId && !AMBIGUOUS_EXTENSIONS.has(extension)) {
+        return manifest.languages[extensionId];
+    }
+    if (knownLanguageId) return manifest.languages[languageId];
+    if (extensionId && languageId === "plaintext") {
+        return manifest.languages[extensionId];
+    }
     const fallbackName = languageId !== "plaintext" ? languageId : extension || "Unknown";
     return { ...CODE_META, name: fallbackName.charAt(0).toUpperCase() + fallbackName.slice(1) };
 }
@@ -76,7 +84,14 @@ export function activityAssets(manifest: AssetManifest, language: LanguageMeta, 
     if (mode === "editor") selected = editor.assetKey;
     else if (mode === "languageLogo") selected = language.logoAssetKey ?? language.assetKey;
     else if (mode === "languageOutline" || mode === "languageOutlineEditor") selected = language.outlineAssetKey;
-    if (mode === "languageTextEditor" || mode === "languageOutlineEditor") {
+    else if (mode === "languageMono" || mode === "languageMonoEditor") {
+        const candidate = `${language.assetKey}-mono`;
+        if (owns(manifest.assets, candidate)) selected = candidate;
+    } else if (mode === "languageCard" || mode === "languageCardEditor") {
+        const candidate = `${language.assetKey}-card`;
+        if (owns(manifest.assets, candidate)) selected = candidate;
+    }
+    if (mode === "languageTextEditor" || mode === "languageOutlineEditor" || mode === "languageMonoEditor" || mode === "languageCardEditor") {
         const candidate = `${selected}-${editor.embeddedKey}`;
         if (owns(manifest.assets, candidate)) { selected = candidate; embedded = true; }
     }
