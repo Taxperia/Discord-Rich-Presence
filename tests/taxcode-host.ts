@@ -23,7 +23,15 @@ export async function run() {
     const assets = activityAssets(BUNDLED_MANIFEST, language, editor, "languageTextEditor", true);
     assert.ok(assets.large_image.includes("/editors/taxcode/default/typescript.png"));
     const commands = await vscode.commands.getCommands(true);
-    for (const command of ["cursorDiscord.reconnect", "cursorDiscord.disconnect", "cursorDiscord.openSettings"]) {
+    for (const command of [
+        "cursorDiscord.reconnect",
+        "cursorDiscord.disconnect",
+        "cursorDiscord.openSettings",
+        "cursorDiscord.showMenu",
+        "cursorDiscord.pause",
+        "cursorDiscord.resume",
+        "cursorDiscord.togglePrivacy",
+    ]) {
         assert.ok(commands.includes(command), `Missing command: ${command}`);
     }
     await vscode.commands.executeCommand("cursorDiscord.disconnect");

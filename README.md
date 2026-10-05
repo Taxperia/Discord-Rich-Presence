@@ -14,10 +14,12 @@ A VS Code / Cursor / TaxCode extension that shows your coding activity on Discor
 - GitHub-hosted artwork and a cached, remotely refreshed language catalog
 - English and Turkish Rich Presence messages
 - Privacy mode and customizable Details / State text
+- Automatic protection for sensitive file names with customizable wildcard patterns
 - Tracks elapsed time
-- Idle mode when no text editor is active
+- Configurable idle detection that can show an idle status or clear the activity
+- Workspace exclusion patterns for projects that should never be published
 - Auto-connect with progressive reconnect delays
-- Status bar connection indicator
+- Status bar connection indicator with quick controls for enable, pause, privacy, reconnect, and settings
 
 ## Artwork Modes
 
@@ -89,6 +91,11 @@ TaxCode artwork and GitHub-hosted images are available starting with version
 | `showFileName` | `true` | Show current file name on Discord |
 | `showLanguage` | `true` | Show programming language on Discord |
 | `showElapsedTime` | `true` | Show elapsed time on Discord |
+| `idleTimeout` | `300` | Seconds without editor activity before becoming idle; use `0` to disable automatic detection |
+| `idleBehavior` | `"idle"` | Show an idle presence or clear the Discord activity while idle |
+| `hideSensitiveFiles` | `true` | Automatically hide common secret, credential, environment, and key file names |
+| `hiddenFilePatterns` | sensitive defaults | File-name wildcard patterns hidden from Discord |
+| `disabledWorkspacePatterns` | `[]` | Workspace name or full-path wildcard patterns where activity is cleared |
 | `customDetails` | `""` | Custom Details template |
 | `customState` | `""` | Custom State template |
 | `idleMessage` | `""` | Custom idle message; empty uses the selected language |
@@ -102,6 +109,10 @@ private labels.
 | Command | Description |
 |---------|-------------|
 | `Discord RPC: Open Settings` | Open all extension settings |
+| `Discord RPC: Show Quick Menu` | Open status-bar controls |
+| `Discord RPC: Pause Presence` | Temporarily clear activity without disconnecting |
+| `Discord RPC: Resume Presence` | Resume activity and reset the idle timer |
+| `Discord RPC: Toggle Privacy Mode` | Toggle global privacy mode |
 | `Discord RPC: Reconnect` | Reconnect to Discord |
 | `Discord RPC: Disconnect` | Disconnect from Discord |
 

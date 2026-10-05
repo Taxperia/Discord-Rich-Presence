@@ -2,13 +2,21 @@ import * as vscode from "vscode";
 import { SimpleDiscordRPC } from "./simple-rpc";
 import { activityAssets, BUNDLED_MANIFEST, CODE_META, LanguageMeta, LargeImageMode, resolveEditor, resolveLanguage } from "./asset-catalog";
 import { AssetCatalogLoader, CATALOG_REFRESH_MS } from "./asset-catalog-loader";
-import { normalizeActivityText, selectWorkspaceName } from "./presence-utils";
+import {
+    ActivityIdleTracker,
+    DEFAULT_SENSITIVE_FILE_PATTERNS,
+    isSensitiveFile,
+    isWorkspaceExcluded,
+    normalizeActivityText,
+    selectWorkspaceName,
+} from "./presence-utils";
 
 const DISCORD_APPLICATION_ID = "1553496746720624841";
 const THROTTLE_MS = 2000;
 const RECONNECT_DELAYS_MS = [5000, 10000, 30000] as const;
 
 type DisplayLanguage = "auto" | "en" | "tr";
+type IdleBehavior = "idle" | "clear";
 
 type PresenceConfig = {
     enabled: boolean;
@@ -20,6 +28,11 @@ type PresenceConfig = {
     showFileName: boolean;
     showLanguage: boolean;
     showElapsedTime: boolean;
+    idleTimeout: number;
+    idleBehavior: IdleBehavior;
+    hideSensitiveFiles: boolean;
+    hiddenFilePatterns: string[];
+    disabledWorkspacePatterns: string[];
     idleMessage: string;
     customDetails: string;
     customState: string;
@@ -36,6 +49,8 @@ let reconnectAttempt = 0;
 let activeConnection: { client: SimpleDiscordRPC; promise: Promise<void> } | null = null;
 let statusBarItem: vscode.StatusBarItem;
 let reconnectEnabled = true;
+let presencePaused = false;
+let idleTracker: ActivityIdleTracker | null = null;
 
 function getLanguageMeta(document: vscode.TextDocument): LanguageMeta {
     return resolveLanguage(catalog?.manifest ?? BUNDLED_MANIFEST, document.fileName, document.languageId);
@@ -54,8 +69,18 @@ const MESSAGES = {
         reconnecting: "Reconnecting...",
         retrying: "Connection failed. Retrying in {seconds}s...",
         disabled: "Disabled",
+        paused: "Paused",
+        workspaceExcluded: "Hidden in this workspace",
         failed: "Failed - Is Discord running?",
         unknown: "Unknown",
+        pauseAction: "Pause Presence",
+        resumeAction: "Resume Presence",
+        disableAction: "Disable Presence",
+        enableAction: "Enable Presence",
+        privacyOnAction: "Enable Privacy Mode",
+        privacyOffAction: "Disable Privacy Mode",
+        reconnectAction: "Reconnect",
+        settingsAction: "Open Settings",
     },
     tr: {
         editing: "Düzenliyor",
@@ -69,8 +94,18 @@ const MESSAGES = {
         reconnecting: "Yeniden bağlanıyor...",
         retrying: "Bağlantı başarısız. {seconds} sn sonra yeniden denenecek...",
         disabled: "Kapalı",
+        paused: "Duraklatıldı",
+        workspaceExcluded: "Bu çalışma alanında gizli",
         failed: "Bağlantı başarısız - Discord açık mı?",
         unknown: "Bilinmeyen",
+        pauseAction: "Presence'ı Duraklat",
+        resumeAction: "Presence'ı Sürdür",
+        disableAction: "Presence'ı Kapat",
+        enableAction: "Presence'ı Aç",
+        privacyOnAction: "Gizlilik Modunu Aç",
+        privacyOffAction: "Gizlilik Modunu Kapat",
+        reconnectAction: "Yeniden Bağlan",
+        settingsAction: "Ayarları Aç",
     },
 } as const;
 
@@ -88,6 +123,11 @@ function getConfig(): PresenceConfig {
         showFileName: config.get<boolean>("showFileName", true),
         showLanguage: config.get<boolean>("showLanguage", true),
         showElapsedTime: config.get<boolean>("showElapsedTime", true),
+        idleTimeout: config.get<number>("idleTimeout", 300),
+        idleBehavior: config.get<IdleBehavior>("idleBehavior", "idle"),
+        hideSensitiveFiles: config.get<boolean>("hideSensitiveFiles", true),
+        hiddenFilePatterns: config.get<string[]>("hiddenFilePatterns", [...DEFAULT_SENSITIVE_FILE_PATTERNS]),
+        disabledWorkspacePatterns: config.get<string[]>("disabledWorkspacePatterns", []),
         idleMessage: config.get<string>("idleMessage", ""),
         customDetails: config.get<string>("customDetails", ""),
         customState: config.get<string>("customState", ""),
@@ -104,8 +144,9 @@ function message(key: MessageKey, config: PresenceConfig): string {
 }
 
 function getWorkspaceName(document: vscode.TextDocument, config: PresenceConfig): string {
+    const documentWorkspace = vscode.workspace.getWorkspaceFolder(document.uri);
     return selectWorkspaceName(
-        vscode.workspace.getWorkspaceFolder(document.uri)?.name,
+        documentWorkspace?.name,
         vscode.workspace.workspaceFolders?.[0]?.name,
         message("noWorkspace", config)
     );
@@ -160,17 +201,52 @@ function throttleUpdate(fn: () => void) {
     throttleTimer = setTimeout(fn, THROTTLE_MS);
 }
 
+function recordEditorActivity() {
+    const config = getConfig();
+    const wasIdle = idleTracker?.recordActivity(config.idleTimeout) ?? false;
+    if (wasIdle && !presencePaused) throttleUpdate(() => updatePresence());
+}
+
+function clearPublishedActivity() {
+    if (!rpc?.isConnected()) return;
+    try { rpc.clearActivity(); }
+    catch (error) { console.error("Failed to clear activity:", error); }
+}
+
 async function updatePresence() {
     const config = getConfig();
     if (!config.enabled) {
         updateStatusBar(message("disabled", config));
         return;
     }
+    if (presencePaused) {
+        clearPublishedActivity();
+        updateStatusBar(message("paused", config));
+        return;
+    }
     if (!rpc || !rpc.isConnected()) return;
 
     const editor = vscode.window.activeTextEditor;
 
-    if (!editor) {
+    if (editor) {
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(editor.document.uri);
+        if (isWorkspaceExcluded(
+            workspaceFolder?.name,
+            workspaceFolder?.uri.fsPath,
+            config.disabledWorkspacePatterns
+        )) {
+            clearPublishedActivity();
+            updateStatusBar(message("workspaceExcluded", config));
+            return;
+        }
+    }
+
+    if (!editor || idleTracker?.isIdle) {
+        if (config.idleBehavior === "clear") {
+            clearPublishedActivity();
+            updateStatusBar(message("idle", config));
+            return;
+        }
         const state = config.idleMessage.trim() || message("idle", config);
         await setActivity(vscode.env.appName, state, true, CODE_META, config);
         updateStatusBar(message("idle", config));
@@ -182,8 +258,12 @@ async function updatePresence() {
     const baseName = fileName.split(/[/\\]/).pop() ?? "unknown";
     const language = getLanguageMeta(document);
     const workspace = getWorkspaceName(document, config);
+    const sensitiveFile = config.hideSensitiveFiles && isSensitiveFile(fileName, config.hiddenFilePatterns);
+    const displayedFileName = config.privacyMode || sensitiveFile
+        ? message("privateFile", config)
+        : baseName;
     const templateValues = {
-        file: config.privacyMode ? message("privateFile", config) : baseName,
+        file: displayedFileName,
         workspace: config.privacyMode ? message("privateWorkspace", config) : workspace,
         language: language.name,
         app: vscode.env.appName,
@@ -199,7 +279,7 @@ async function updatePresence() {
             ? `${message("editing", config)}: ${language.name}`
             : message("editing", config);
     } else if (config.showFileName) {
-        details = `${message("editing", config)}: ${baseName}`;
+        details = `${message("editing", config)}: ${displayedFileName}`;
     }
 
     if (config.customState.trim()) {
@@ -305,6 +385,75 @@ function scheduleReconnect() {
     }, delay);
 }
 
+async function pausePresence() {
+    const config = getConfig();
+    if (!config.enabled) {
+        updateStatusBar(message("disabled", config));
+        return;
+    }
+    presencePaused = true;
+    clearPublishedActivity();
+    updateStatusBar(message("paused", config));
+}
+
+async function resumePresence() {
+    presencePaused = false;
+    const config = getConfig();
+    idleTracker?.recordActivity(config.idleTimeout);
+    if (!config.enabled) {
+        updateStatusBar(message("disabled", config));
+    } else if (!rpc?.isConnected()) {
+        await connectRpc();
+    } else {
+        await updatePresence();
+    }
+}
+
+async function togglePrivacyMode() {
+    const configuration = vscode.workspace.getConfiguration("cursorDiscord");
+    const enabled = configuration.get<boolean>("privacyMode", false);
+    await configuration.update("privacyMode", !enabled, vscode.ConfigurationTarget.Global);
+}
+
+async function setPresenceEnabled(enabled: boolean) {
+    if (enabled) presencePaused = false;
+    await vscode.workspace.getConfiguration("cursorDiscord")
+        .update("enabled", enabled, vscode.ConfigurationTarget.Global);
+}
+
+async function showQuickMenu() {
+    const config = getConfig();
+    type MenuAction = "toggleEnabled" | "togglePause" | "togglePrivacy" | "reconnect" | "settings";
+    const items: Array<vscode.QuickPickItem & { action: MenuAction }> = [
+        {
+            label: config.enabled ? `$(circle-slash) ${message("disableAction", config)}` : `$(play) ${message("enableAction", config)}`,
+            action: "toggleEnabled",
+        },
+    ];
+    if (config.enabled) {
+        items.push({
+            label: presencePaused ? `$(play) ${message("resumeAction", config)}` : `$(debug-pause) ${message("pauseAction", config)}`,
+            action: "togglePause",
+        });
+    }
+    items.push({
+        label: config.privacyMode ? `$(eye) ${message("privacyOffAction", config)}` : `$(eye-closed) ${message("privacyOnAction", config)}`,
+        action: "togglePrivacy",
+    });
+    if (config.enabled) {
+        items.push({ label: `$(refresh) ${message("reconnectAction", config)}`, action: "reconnect" });
+    }
+    items.push({ label: `$(settings-gear) ${message("settingsAction", config)}`, action: "settings" });
+
+    const selected = await vscode.window.showQuickPick(items, { placeHolder: "Discord Coding Presence" });
+    if (!selected) return;
+    if (selected.action === "toggleEnabled") await setPresenceEnabled(!config.enabled);
+    else if (selected.action === "togglePause") await (presencePaused ? resumePresence() : pausePresence());
+    else if (selected.action === "togglePrivacy") await togglePrivacyMode();
+    else if (selected.action === "reconnect") await vscode.commands.executeCommand("cursorDiscord.reconnect");
+    else await vscode.commands.executeCommand("cursorDiscord.openSettings");
+}
+
 export async function activate(context: vscode.ExtensionContext) {
     catalogDisposed = false;
     catalog = new AssetCatalogLoader(context.globalState);
@@ -319,11 +468,14 @@ export async function activate(context: vscode.ExtensionContext) {
         0
     );
     statusBarItem.tooltip = "Discord Coding Presence";
-    statusBarItem.command = "cursorDiscord.openSettings";
+    statusBarItem.command = "cursorDiscord.showMenu";
     context.subscriptions.push(statusBarItem);
     statusBarItem.show();
 
     const initialConfig = getConfig();
+    idleTracker = new ActivityIdleTracker(() => { void updatePresence(); });
+    idleTracker.recordActivity(initialConfig.idleTimeout);
+    context.subscriptions.push({ dispose: () => { idleTracker?.dispose(); idleTracker = null; } });
     updateStatusBar(initialConfig.enabled
         ? message("connecting", initialConfig)
         : message("disabled", initialConfig));
@@ -332,18 +484,27 @@ export async function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         vscode.window.onDidChangeActiveTextEditor(() => {
+            recordEditorActivity();
             throttleUpdate(() => updatePresence());
         })
     );
 
     context.subscriptions.push(
-        vscode.workspace.onDidChangeTextDocument(() => {
+        vscode.workspace.onDidChangeTextDocument(event => {
+            if (event.document === vscode.window.activeTextEditor?.document) recordEditorActivity();
             throttleUpdate(() => updatePresence());
         })
     );
 
     context.subscriptions.push(
-        vscode.window.onDidChangeWindowState(() => {
+        vscode.window.onDidChangeTextEditorSelection(event => {
+            if (event.textEditor === vscode.window.activeTextEditor) recordEditorActivity();
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.window.onDidChangeWindowState(event => {
+            if (event.focused) recordEditorActivity();
             throttleUpdate(() => updatePresence());
         })
     );
@@ -353,9 +514,11 @@ export async function activate(context: vscode.ExtensionContext) {
             if (!event.affectsConfiguration("cursorDiscord")) return;
 
             const config = getConfig();
+            idleTracker?.recordActivity(config.idleTimeout);
             if (!config.enabled) {
                 reconnectEnabled = false;
                 reconnectAttempt = 0;
+                presencePaused = false;
                 clearReconnectTimer();
                 if (rpc) {
                     try { rpc.clearActivity(); } catch {}
@@ -384,6 +547,13 @@ export async function activate(context: vscode.ExtensionContext) {
                 `@ext:${context.extension.id}`
             );
         })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand("cursorDiscord.showMenu", showQuickMenu),
+        vscode.commands.registerCommand("cursorDiscord.pause", pausePresence),
+        vscode.commands.registerCommand("cursorDiscord.resume", resumePresence),
+        vscode.commands.registerCommand("cursorDiscord.togglePrivacy", togglePrivacyMode)
     );
 
     context.subscriptions.push(
@@ -416,6 +586,8 @@ export async function deactivate() {
     catalogDisposed = true;
     reconnectEnabled = false;
     if (throttleTimer) clearTimeout(throttleTimer);
+    idleTracker?.dispose();
+    idleTracker = null;
     clearReconnectTimer();
     if (rpc) {
         try { rpc.disconnect(); } catch {}

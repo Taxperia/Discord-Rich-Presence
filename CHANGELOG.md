@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.1.5] - 2026-10-05
+
+### Added
+
+- Detect editor inactivity with a configurable idle timeout and either show an idle presence or clear activity.
+- Automatically hide sensitive file names using customizable wildcard patterns.
+- Hide Rich Presence in selected workspaces using workspace name or path patterns.
+- Add Pause, Resume, Toggle Privacy Mode, and Show Quick Menu commands.
+- Open a localized quick-control menu from the status bar.
+
+### Improved
+
+- Resume presence immediately when editing, changing selections, switching editors, or returning to the editor window.
+- Keep sensitive file protection independent from full Privacy Mode so workspace information can remain visible.
+- Add automated coverage for idle timing, sensitive files, workspace exclusions, and the 1.1.5 extension manifest.
+
 ## [1.1.4] - 2026-10-04
 
 ### Fixed

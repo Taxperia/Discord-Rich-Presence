@@ -38,6 +38,69 @@ test('the active document workspace wins in multi-root projects', () => {
     assert.equal(selectWorkspaceName(undefined, undefined, 'No Workspace'), 'No Workspace');
 });
 
+test('sensitive files and excluded workspaces support case-insensitive wildcards', () => {
+    const {
+        DEFAULT_SENSITIVE_FILE_PATTERNS,
+        isSensitiveFile,
+        isWorkspaceExcluded,
+        matchesAnyPattern,
+    } = load('src/presence-utils.ts');
+    assert.equal(isSensitiveFile('C:\\project\\.env.local', DEFAULT_SENSITIVE_FILE_PATTERNS), true);
+    assert.equal(isSensitiveFile('/project/CLIENT-CREDENTIALS.json', DEFAULT_SENSITIVE_FILE_PATTERNS), true);
+    assert.equal(isSensitiveFile('/project/public.ts', DEFAULT_SENSITIVE_FILE_PATTERNS), false);
+    assert.equal(matchesAnyPattern('api-private', ['api-?rivate']), true);
+    assert.equal(isWorkspaceExcluded('client-secret', 'C:\\work\\client-secret', ['*-secret']), true);
+    assert.equal(isWorkspaceExcluded('website', 'C:\\private\\website', ['C:/private/*']), true);
+    assert.equal(isWorkspaceExcluded('website', 'C:\\public\\website', ['C:/private/*']), false);
+});
+
+test('idle tracker resets, fires once, and can be disabled', () => {
+    const { ActivityIdleTracker } = load('src/presence-utils.ts');
+    const timers = new Map();
+    let nextTimer = 0;
+    let idleEvents = 0;
+    const tracker = new ActivityIdleTracker(
+        () => idleEvents++,
+        (callback, delay) => {
+            const id = ++nextTimer;
+            timers.set(id, {
+                callback: () => { timers.delete(id); callback(); },
+                delay,
+            });
+            return id;
+        },
+        id => timers.delete(id)
+    );
+
+    assert.equal(tracker.recordActivity(5), false);
+    assert.equal(timers.size, 1);
+    assert.equal([...timers.values()][0].delay, 5000);
+    tracker.recordActivity(10);
+    assert.equal(timers.size, 1);
+    assert.equal([...timers.values()][0].delay, 10000);
+    [...timers.values()][0].callback();
+    assert.equal(tracker.isIdle, true);
+    assert.equal(idleEvents, 1);
+    assert.equal(tracker.recordActivity(0), true);
+    assert.equal(tracker.isIdle, false);
+    assert.equal(timers.size, 0);
+    tracker.dispose();
+});
+
+test('1.1.5 manifest exposes privacy, idle, and quick-control settings', () => {
+    const manifest = require('../package.json');
+    const properties = manifest.contributes.configuration.properties;
+    const commands = manifest.contributes.commands.map(command => command.command);
+    assert.equal(manifest.version, '1.1.5');
+    assert.equal(properties['cursorDiscord.idleTimeout'].default, 300);
+    assert.equal(properties['cursorDiscord.idleBehavior'].default, 'idle');
+    assert.equal(properties['cursorDiscord.hideSensitiveFiles'].default, true);
+    assert.deepEqual(properties['cursorDiscord.hiddenFilePatterns'].default, ['.env*', '*.pem', '*.key', '*credentials*', '*secret*']);
+    for (const command of ['cursorDiscord.showMenu', 'cursorDiscord.pause', 'cursorDiscord.resume', 'cursorDiscord.togglePrivacy']) {
+        assert.ok(commands.includes(command), command);
+    }
+});
+
 test('Discord IPC candidates cover channels zero through nine', () => {
     const { getDiscordIpcPaths } = load('src/simple-rpc.ts');
     const windows = Array.from(getDiscordIpcPaths('win32', {}));
