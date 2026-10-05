@@ -16,7 +16,7 @@ A VS Code / Cursor / TaxCode extension that shows your coding activity on Discor
 - Privacy mode and customizable Details / State text
 - Tracks elapsed time
 - Idle mode when no text editor is active
-- Auto-connect and reconnect
+- Auto-connect with progressive reconnect delays
 - Status bar connection indicator
 
 ## Artwork Modes
@@ -117,7 +117,9 @@ JavaScript, TypeScript, Python, Java, C++, C, C#, Go, Rust, Ruby, PHP, Swift, Ko
 ## Technical Details
 
 - Uses raw Discord IPC Protocol (no external dependencies)
-- Uses Named Pipe connection instead of WebSocket (more reliable)
+- Uses local Discord IPC (named pipes on Windows and Unix sockets on macOS/Linux) instead of WebSocket
+- Scans Discord IPC channels `0` through `9` and prevents duplicate reconnect attempts
+- Uses the active file's owning folder in multi-root workspaces
 - Runs in the local UI extension host so Discord IPC stays on the desktop during remote workspace sessions
 - Sends ping every 30 seconds to keep connection alive
 - Artwork is served from public GitHub URLs; no per-image Developer Portal upload is needed

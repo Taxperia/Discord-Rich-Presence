@@ -2,9 +2,11 @@ import * as vscode from "vscode";
 import { SimpleDiscordRPC } from "./simple-rpc";
 import { activityAssets, BUNDLED_MANIFEST, CODE_META, LanguageMeta, LargeImageMode, resolveEditor, resolveLanguage } from "./asset-catalog";
 import { AssetCatalogLoader, CATALOG_REFRESH_MS } from "./asset-catalog-loader";
+import { normalizeActivityText, selectWorkspaceName } from "./presence-utils";
 
 const DISCORD_APPLICATION_ID = "1553496746720624841";
 const THROTTLE_MS = 2000;
+const RECONNECT_DELAYS_MS = [5000, 10000, 30000] as const;
 
 type DisplayLanguage = "auto" | "en" | "tr";
 
@@ -29,6 +31,9 @@ let catalogDisposed = false;
 let rpc: SimpleDiscordRPC | null = null;
 let startTime: number = Date.now();
 let throttleTimer: NodeJS.Timeout | null = null;
+let reconnectTimer: NodeJS.Timeout | null = null;
+let reconnectAttempt = 0;
+let activeConnection: { client: SimpleDiscordRPC; promise: Promise<void> } | null = null;
 let statusBarItem: vscode.StatusBarItem;
 let reconnectEnabled = true;
 
@@ -47,6 +52,7 @@ const MESSAGES = {
         disconnected: "Disconnected",
         connecting: "Connecting...",
         reconnecting: "Reconnecting...",
+        retrying: "Connection failed. Retrying in {seconds}s...",
         disabled: "Disabled",
         failed: "Failed - Is Discord running?",
         unknown: "Unknown",
@@ -61,6 +67,7 @@ const MESSAGES = {
         disconnected: "Bağlantı kesildi",
         connecting: "Bağlanıyor...",
         reconnecting: "Yeniden bağlanıyor...",
+        retrying: "Bağlantı başarısız. {seconds} sn sonra yeniden denenecek...",
         disabled: "Kapalı",
         failed: "Bağlantı başarısız - Discord açık mı?",
         unknown: "Bilinmeyen",
@@ -96,9 +103,12 @@ function message(key: MessageKey, config: PresenceConfig): string {
     return MESSAGES[getMessageLanguage(config)][key];
 }
 
-function getWorkspaceName(config: PresenceConfig): string {
-    const workspace = vscode.workspace.workspaceFolders?.[0];
-    return workspace?.name ?? message("noWorkspace", config);
+function getWorkspaceName(document: vscode.TextDocument, config: PresenceConfig): string {
+    return selectWorkspaceName(
+        vscode.workspace.getWorkspaceFolder(document.uri)?.name,
+        vscode.workspace.workspaceFolders?.[0]?.name,
+        message("noWorkspace", config)
+    );
 }
 
 function applyTemplate(
@@ -128,8 +138,8 @@ async function setActivity(
     if (!config.enabled || !rpc || !rpc.isConnected()) return;
 
     const activity: any = {
-        details: details || undefined,
-        state: state || undefined,
+        details: normalizeActivityText(details),
+        state: normalizeActivityText(state),
         assets: getActivityAssets(language, config),
         instance: true,
     };
@@ -171,7 +181,7 @@ async function updatePresence() {
     const fileName = document.fileName;
     const baseName = fileName.split(/[/\\]/).pop() ?? "unknown";
     const language = getLanguageMeta(document);
-    const workspace = getWorkspaceName(config);
+    const workspace = getWorkspaceName(document, config);
     const templateValues = {
         file: config.privacyMode ? message("privateFile", config) : baseName,
         workspace: config.privacyMode ? message("privateWorkspace", config) : workspace,
@@ -208,56 +218,91 @@ async function updatePresence() {
     updateStatusBar(`${baseName} (${language.name})`);
 }
 
-async function connectRpc() {
+function clearReconnectTimer() {
+    if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+    }
+}
+
+async function connectRpc(): Promise<void> {
     const config = getConfig();
     if (!config.enabled) {
         reconnectEnabled = false;
+        clearReconnectTimer();
         updateStatusBar(message("disabled", config));
         return;
     }
     reconnectEnabled = true;
+    clearReconnectTimer();
+
+    if (activeConnection && activeConnection.client === rpc) {
+        return activeConnection.promise;
+    }
 
     if (rpc) {
         try { rpc.disconnect(); } catch {}
         rpc = null;
     }
 
-    rpc = new SimpleDiscordRPC(DISCORD_APPLICATION_ID);
+    const client = new SimpleDiscordRPC(DISCORD_APPLICATION_ID);
+    rpc = client;
 
-    rpc.on("ready", async () => {
-        const user = rpc?.getUser();
+    client.on("ready", async () => {
+        if (rpc !== client) return;
+        clearReconnectTimer();
+        reconnectAttempt = 0;
+        const user = client.getUser();
         const readyConfig = getConfig();
         updateStatusBar(`${message("connected", readyConfig)} (${user?.username ?? message("unknown", readyConfig)})`);
         startTime = Date.now();
         await updatePresence();
     });
 
-    rpc.on("disconnected", () => {
+    client.on("disconnected", () => {
+        if (rpc !== client) return;
         const disconnectedConfig = getConfig();
         updateStatusBar(message("disconnected", disconnectedConfig));
         if (reconnectEnabled) scheduleReconnect();
     });
 
-    rpc.on("error", (err: Error) => {
+    client.on("error", (err: Error) => {
         console.error("Discord Coding Presence RPC error:", err.message);
     });
 
-    try {
+    const promise = (async () => {
         updateStatusBar(message("connecting", config));
-        await rpc.connect();
-    } catch (err: any) {
-        console.error("Discord RPC connection failed:", err.message);
-        updateStatusBar(message("failed", config));
-        scheduleReconnect();
+        try {
+            await client.connect();
+        } catch (error) {
+            if (rpc !== client) return;
+            const currentConfig = getConfig();
+            console.error("Discord RPC connection failed:", error instanceof Error ? error.message : error);
+            updateStatusBar(message("failed", currentConfig));
+            scheduleReconnect();
+        }
+    })();
+
+    activeConnection = { client, promise };
+    try {
+        await promise;
+    } finally {
+        if (activeConnection?.client === client) activeConnection = null;
     }
 }
 
 function scheduleReconnect() {
-    setTimeout(async () => {
+    if (reconnectTimer || !reconnectEnabled || !getConfig().enabled) return;
+    const delay = RECONNECT_DELAYS_MS[Math.min(reconnectAttempt, RECONNECT_DELAYS_MS.length - 1)];
+    reconnectAttempt++;
+    const config = getConfig();
+    updateStatusBar(message("retrying", config).replace("{seconds}", String(delay / 1000)));
+    reconnectTimer = setTimeout(async () => {
+        reconnectTimer = null;
         if (reconnectEnabled && getConfig().enabled && (!rpc || !rpc.isConnected())) {
             await connectRpc();
         }
-    }, 10000);
+    }, delay);
 }
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -310,6 +355,8 @@ export async function activate(context: vscode.ExtensionContext) {
             const config = getConfig();
             if (!config.enabled) {
                 reconnectEnabled = false;
+                reconnectAttempt = 0;
+                clearReconnectTimer();
                 if (rpc) {
                     try { rpc.clearActivity(); } catch {}
                     try { rpc.disconnect(); } catch {}
@@ -343,6 +390,8 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand("cursorDiscord.reconnect", async () => {
             const config = getConfig();
             reconnectEnabled = true;
+            reconnectAttempt = 0;
+            clearReconnectTimer();
             updateStatusBar(message("reconnecting", config));
             await connectRpc();
         })
@@ -351,6 +400,8 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand("cursorDiscord.disconnect", async () => {
             reconnectEnabled = false;
+            reconnectAttempt = 0;
+            clearReconnectTimer();
             if (rpc) {
                 try { rpc.disconnect(); } catch {}
                 rpc = null;
@@ -365,6 +416,7 @@ export async function deactivate() {
     catalogDisposed = true;
     reconnectEnabled = false;
     if (throttleTimer) clearTimeout(throttleTimer);
+    clearReconnectTimer();
     if (rpc) {
         try { rpc.disconnect(); } catch {}
         rpc = null;

@@ -3,6 +3,24 @@ import * as path from "path";
 import { EventEmitter } from "events";
 
 const OPCODE = { HANDSHAKE: 0, FRAME: 1, CLOSE: 3, PING: 4, PONG: 5 };
+const IPC_CHANNEL_COUNT = 10;
+const PIPE_CONNECT_TIMEOUT_MS = 1500;
+const HANDSHAKE_TIMEOUT_MS = 10000;
+
+export function getDiscordIpcPaths(
+    platform: NodeJS.Platform = process.platform,
+    env: NodeJS.ProcessEnv = process.env
+): string[] {
+    if (platform === "win32") {
+        return Array.from({ length: IPC_CHANNEL_COUNT }, (_, index) => `\\\\.\\pipe\\discord-ipc-${index}`);
+    }
+
+    const runtimeDirectory = env.XDG_RUNTIME_DIR || env.TMPDIR || env.TMP || env.TEMP || "/tmp";
+    return Array.from(
+        { length: IPC_CHANNEL_COUNT },
+        (_, index) => path.posix.join(runtimeDirectory.replace(/\\/g, "/"), `discord-ipc-${index}`)
+    );
+}
 
 export class SimpleDiscordRPC extends EventEmitter {
     private clientId: string;
@@ -12,6 +30,7 @@ export class SimpleDiscordRPC extends EventEmitter {
     private connected = false;
     private user: any = null;
     private keepAliveTimer: NodeJS.Timeout | null = null;
+    private connectionGeneration = 0;
 
     constructor(clientId: string) {
         super();
@@ -37,58 +56,107 @@ export class SimpleDiscordRPC extends EventEmitter {
     }
 
     async connect(): Promise<void> {
-        const pipeName = "\\\\.\\pipe\\discord-ipc-0";
+        this.disconnect();
+        const generation = this.connectionGeneration;
+        let lastError: Error = new Error("Discord IPC endpoint not found");
 
+        for (const ipcPath of getDiscordIpcPaths()) {
+            try {
+                await this.connectToPath(ipcPath);
+                if (generation !== this.connectionGeneration) throw new Error("Discord IPC connection cancelled");
+                return;
+            } catch (error) {
+                if (generation !== this.connectionGeneration) throw new Error("Discord IPC connection cancelled");
+                lastError = error instanceof Error ? error : new Error(String(error));
+            }
+        }
+
+        throw lastError;
+    }
+
+    private connectToPath(ipcPath: string): Promise<void> {
         return new Promise((resolve, reject) => {
-            this.socket = net.createConnection(pipeName);
+            const socket = net.createConnection(ipcPath);
+            this.socket = socket;
+            this.buffer = Buffer.alloc(0);
+            let settled = false;
+            let connectedToPipe = false;
 
-            this.socket.on("connect", () => {
-                this.socket!.write(
-                    this.encode(OPCODE.HANDSHAKE, { v: 1, client_id: this.clientId })
-                );
+            const finish = (error?: Error) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timeout);
+                this.removeListener("ready", onReady);
+                this.removeListener("error", onProtocolError);
+
+                if (error) {
+                    socket.removeAllListeners();
+                    socket.destroy();
+                    if (this.socket === socket) this.socket = null;
+                    reject(error);
+                } else {
+                    resolve();
+                }
+            };
+            const onReady = () => finish();
+            const onProtocolError = (error: Error) => finish(error);
+            const onTimeout = () => finish(new Error(
+                connectedToPipe
+                    ? `Discord IPC handshake timed out at ${ipcPath}`
+                    : `Discord IPC connection timed out at ${ipcPath}`
+            ));
+            let timeout = setTimeout(onTimeout, PIPE_CONNECT_TIMEOUT_MS);
+
+            this.once("ready", onReady);
+            this.once("error", onProtocolError);
+
+            socket.on("connect", () => {
+                if (settled) return;
+                connectedToPipe = true;
+                clearTimeout(timeout);
+                timeout = setTimeout(onTimeout, HANDSHAKE_TIMEOUT_MS);
+                socket.write(this.encode(OPCODE.HANDSHAKE, { v: 1, client_id: this.clientId }));
             });
 
-            this.socket.on("data", (chunk: Buffer) => {
+            socket.on("data", (chunk: Buffer) => {
+                if (this.socket !== socket) return;
                 this.buffer = Buffer.concat([this.buffer, chunk]);
-                this.processBuffer();
+                this.processBuffer(socket);
             });
 
-            this.socket.on("error", (err: Error) => {
-                this.emit("error", err);
-                reject(err);
+            socket.on("error", (error: Error) => {
+                if (!settled) finish(error);
+                else this.emit("error", error);
             });
 
-            this.socket.on("close", () => {
-                this.connected = false;
-                this.emit("disconnected");
+            socket.on("close", () => {
+                const wasActive = this.socket === socket;
+                const wasConnected = wasActive && this.connected;
+                if (wasActive) {
+                    this.socket = null;
+                    this.connected = false;
+                    this.stopKeepAlive();
+                }
+                if (!settled) finish(new Error(`Discord IPC connection closed at ${ipcPath}`));
+                else if (wasConnected) this.emit("disconnected");
             });
-
-            const readyHandler = () => {
-                this.removeListener("error", errorHandler);
-                resolve();
-            };
-            const errorHandler = (err: Error) => {
-                this.removeListener("ready", readyHandler);
-                reject(err);
-            };
-            this.once("ready", readyHandler);
-            this.once("error", errorHandler);
-
-            setTimeout(() => {
-                this.removeListener("ready", readyHandler);
-                this.removeListener("error", errorHandler);
-                reject(new Error("Connection timed out"));
-            }, 10000);
         });
     }
 
-    private processBuffer(): void {
+    private processBuffer(socket: net.Socket): void {
         while (this.buffer.length >= 8) {
             const op = this.buffer.readUInt32LE(0);
             const len = this.buffer.readUInt32LE(4);
             if (this.buffer.length < 8 + len) break;
 
-            const data = JSON.parse(this.buffer.slice(8, 8 + len).toString("utf-8"));
+            let data: any;
+            try {
+                data = JSON.parse(this.buffer.slice(8, 8 + len).toString("utf-8"));
+            } catch (error) {
+                this.emit("error", error instanceof Error ? error : new Error(String(error)));
+                socket.destroy();
+                return;
+            }
             this.buffer = this.buffer.slice(8 + len);
 
             if (op === OPCODE.FRAME) {
@@ -103,9 +171,9 @@ export class SimpleDiscordRPC extends EventEmitter {
                     this.emit("response", data);
                 }
             } else if (op === OPCODE.CLOSE) {
-                this.disconnect();
+                socket.destroy();
             } else if (op === OPCODE.PING) {
-                this.socket?.write(this.encode(OPCODE.PONG, data));
+                socket.write(this.encode(OPCODE.PONG, data));
             }
         }
     }
@@ -142,13 +210,18 @@ export class SimpleDiscordRPC extends EventEmitter {
     }
 
     disconnect(): void {
+        this.connectionGeneration++;
         this.stopKeepAlive();
-        if (this.socket) {
-            this.socket.write(this.encode(OPCODE.CLOSE, {}));
-            this.socket.destroy();
-            this.socket = null;
-        }
+        const socket = this.socket;
+        this.socket = null;
         this.connected = false;
+        this.buffer = Buffer.alloc(0);
+        if (socket) {
+            if (!socket.destroyed && socket.writable) {
+                socket.write(this.encode(OPCODE.CLOSE, {}));
+            }
+            socket.destroy();
+        }
     }
 
     isConnected(): boolean {

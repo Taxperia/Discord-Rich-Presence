@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.1.4] - 2026-10-04
+
+### Fixed
+
+- Detect available Discord IPC channels instead of relying only on `discord-ipc-0`.
+- Prevent duplicate reconnect attempts and stale reconnect timers.
+- Clear connection timeouts correctly after successful or failed handshakes.
+- Show the active file's workspace in multi-root projects.
+- Safely normalize custom Details and State values for Discord.
+
+### Improved
+
+- Add progressive reconnect delays and clearer connection status messages.
+- Expand automated coverage for RPC lifecycle, activity text, and workspace selection.
+
 ## [1.1.3] - 2026-10-03
 
 - Correct the release number to 1.1.3 and remove unverified product mockups from the README.
