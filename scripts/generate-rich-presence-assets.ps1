@@ -21,6 +21,7 @@ $editorLogoDirectory = Join-Path $PSScriptRoot "assets\editor-logos"
 $cursorLogoReference = Join-Path $editorLogoDirectory "cursor-reference.png"
 $vscodeLogoReference = Join-Path $editorLogoDirectory "vscode-reference.png"
 $taxcodeLogoReference = Join-Path $PSScriptRoot "..\src\image\rich-presence\editors\taxcode\iconwhite.png"
+$techCardTemplatePath = Join-Path $PSScriptRoot "assets\style-references\transparent-blue-tech-frame.png"
 
 $assets = @(
     @{ Key = "code";       Text = "CODE";     Color = "#E6E6E6" },
@@ -439,24 +440,24 @@ function New-TechCardAsset {
     param(
         [string]$Name,
         [string]$Text,
+        [string]$Color,
         [ValidateSet("", "cursor", "vscode", "taxcode")]
         [string]$Editor = ""
     )
 
     $canvas = New-Canvas
     $graphics = $canvas.Graphics
-    $blue = [System.Drawing.ColorTranslator]::FromHtml("#2F8CFF")
-    $navy = [System.Drawing.ColorTranslator]::FromHtml("#183558")
-    $muted = [System.Drawing.ColorTranslator]::FromHtml("#52647D")
-    $bluePen = [System.Drawing.Pen]::new($blue, 2.0)
-    $navyPen = [System.Drawing.Pen]::new($navy, 2.0)
-    $thinPen = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(150, $navy.R, $navy.G, $navy.B), 1.0)
-    $barPen = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(210, 18, 42, 72), 22.0)
-    $barPen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
-    $barPen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
-    $darkBrush = [System.Drawing.SolidBrush]::new([System.Drawing.Color]::FromArgb(230, 14, 27, 46))
-    $blueBrush = [System.Drawing.SolidBrush]::new($blue)
-    $mutedBrush = [System.Drawing.SolidBrush]::new($muted)
+    # Keep the fallback CODE card pixel-faithful to the supplied blue reference.
+    # Language cards tint the exact same transparent frame to their language color.
+    $accent = [System.Drawing.ColorTranslator]::FromHtml($Color)
+    $colorMatrix = [System.Drawing.Imaging.ColorMatrix]::new()
+    $colorMatrix.Matrix00 = 0.0
+    $colorMatrix.Matrix11 = 0.0
+    $colorMatrix.Matrix20 = [single]($accent.R / 255.0)
+    $colorMatrix.Matrix21 = [single]($accent.G / 255.0)
+    $colorMatrix.Matrix22 = [single]($accent.B / 255.0)
+    $imageAttributes = [System.Drawing.Imaging.ImageAttributes]::new()
+    $imageAttributes.SetColorMatrix($colorMatrix)
     $whiteBrush = [System.Drawing.SolidBrush]::new([System.Drawing.Color]::FromArgb(246, 246, 248))
     $fontSize = Get-FittedFontSize -Graphics $graphics -Text $Text -Family $fontFamily -Style $fontStyle -MaxWidth 400 -MaxHeight 178 -Maximum 210
     $textFont = [System.Drawing.Font]::new($fontFamily, $fontSize, $fontStyle, [System.Drawing.GraphicsUnit]::Pixel)
@@ -466,36 +467,24 @@ function New-TechCardAsset {
     $textFormat.FormatFlags = [System.Drawing.StringFormatFlags]::NoWrap
 
     try {
-        $graphics.FillEllipse($darkBrush, -72, -88, 190, 190)
-        $graphics.DrawArc($bluePen, -76, -92, 222, 222, 5, 150)
-        $graphics.DrawEllipse($navyPen, 108, 72, 48, 48)
-        $graphics.DrawLine($barPen, 426, -8, 382, 36)
-        $graphics.DrawLine($barPen, 18, 420, -28, 466)
-
-        foreach ($offset in 0, 16, 32) {
-            $graphics.DrawLine($thinPen, 390 + $offset, 44, 470 + $offset, -36)
-            $graphics.DrawLine($thinPen, -24 + $offset, 438, 66 + $offset, 348)
+        $graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+        $graphics.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
+        $destination = [System.Drawing.Rectangle]::new(0, 0, $canvasSize, $canvasSize)
+        if ($Name -eq "code") {
+            $graphics.DrawImage($techCardTemplate, $destination)
         }
-        $graphics.DrawLine($bluePen, 426, 70, 486, 10)
-        $graphics.DrawLine($bluePen, 22, 486, 88, 420)
-        $graphics.DrawArc($navyPen, 248, 414, 188, 188, 195, 150)
-
-        foreach ($origin in @(@(302, 44), @(150, 430))) {
-            for ($row = 0; $row -lt 3; $row++) {
-                for ($column = 0; $column -lt 4; $column++) {
-                    $brush = if (($row + $column) % 3 -eq 0) { $blueBrush } else { $mutedBrush }
-                    $graphics.FillEllipse($brush, $origin[0] + ($column * 17), $origin[1] + ($row * 17), 5, 5)
-                }
-            }
+        else {
+            $graphics.DrawImage(
+                $techCardTemplate,
+                $destination,
+                0,
+                0,
+                $techCardTemplate.Width,
+                $techCardTemplate.Height,
+                [System.Drawing.GraphicsUnit]::Pixel,
+                $imageAttributes
+            )
         }
-
-        foreach ($plus in @(@(38, 164), @(466, 144), @(468, 356))) {
-            $graphics.DrawLine($bluePen, $plus[0] - 10, $plus[1], $plus[0] + 10, $plus[1])
-            $graphics.DrawLine($bluePen, $plus[0], $plus[1] - 10, $plus[0], $plus[1] + 10)
-        }
-        $graphics.FillEllipse($blueBrush, 168, 54, 10, 10)
-        $graphics.FillEllipse($mutedBrush, 198, 88, 7, 7)
-        $graphics.DrawEllipse($bluePen, 378, 390, 18, 18)
 
         $layout = [System.Drawing.RectangleF]::new(52, 154, 408, 204)
         $graphics.DrawString($Text, $textFont, $whiteBrush, $layout, $textFormat)
@@ -505,13 +494,7 @@ function New-TechCardAsset {
         $textFormat.Dispose()
         $textFont.Dispose()
         $whiteBrush.Dispose()
-        $mutedBrush.Dispose()
-        $blueBrush.Dispose()
-        $darkBrush.Dispose()
-        $barPen.Dispose()
-        $thinPen.Dispose()
-        $navyPen.Dispose()
-        $bluePen.Dispose()
+        $imageAttributes.Dispose()
     }
 
     $suffix = if ($Editor) { "-card-$Editor" } else { "-card" }
@@ -664,23 +647,54 @@ function New-EditorAssetFromReference {
     Save-Canvas -Canvas $canvas -Name $Name
 }
 
-foreach ($asset in $assets) {
-    New-TextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color
-    New-TextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "cursor"
-    New-TextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "vscode"
-    New-TextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "taxcode"
-    New-OutlineTextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color
-    New-OutlineTextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "cursor"
-    New-OutlineTextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "vscode"
-    New-OutlineTextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "taxcode"
-    New-NeonMonoAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color
-    New-NeonMonoAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "cursor"
-    New-NeonMonoAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "vscode"
-    New-NeonMonoAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "taxcode"
-    New-TechCardAsset -Name $asset.Key -Text $asset.Text
-    New-TechCardAsset -Name $asset.Key -Text $asset.Text -Editor "cursor"
-    New-TechCardAsset -Name $asset.Key -Text $asset.Text -Editor "vscode"
-    New-TechCardAsset -Name $asset.Key -Text $asset.Text -Editor "taxcode"
+if (-not (Test-Path -LiteralPath $techCardTemplatePath)) {
+    throw "Tech Card template is missing: $techCardTemplatePath"
+}
+
+$techCardTemplate = [System.Drawing.Image]::FromFile($techCardTemplatePath)
+try {
+    if ($techCardTemplate.Width -ne $techCardTemplate.Height) {
+        throw "Tech Card template must be square: $techCardTemplatePath"
+    }
+
+    foreach ($asset in $assets) {
+        New-TextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color
+        New-TextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "cursor"
+        New-TextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "vscode"
+        New-TextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "taxcode"
+        New-OutlineTextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color
+        New-OutlineTextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "cursor"
+        New-OutlineTextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "vscode"
+        New-OutlineTextAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "taxcode"
+        New-NeonMonoAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color
+        New-NeonMonoAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "cursor"
+        New-NeonMonoAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "vscode"
+        New-NeonMonoAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "taxcode"
+        New-TechCardAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color
+        New-TechCardAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "cursor"
+        New-TechCardAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "vscode"
+        New-TechCardAsset -Name $asset.Key -Text $asset.Text -Color $asset.Color -Editor "taxcode"
+    }
+
+    # v1.1.6 published Mono/Card URLs inside default folders. Keep file mirrors at
+    # those URLs so existing cached manifests continue working while new manifests
+    # use the dedicated mono/ and card/ folders.
+    foreach ($asset in $assets) {
+        foreach ($design in "mono", "card") {
+            $source = Join-Path $OutputDirectory (Get-RichPresenceAssetPath -Name "$($asset.Key)-$design")
+            $legacy = Join-Path $OutputDirectory "default/$($asset.Key)-$design.png"
+            [System.IO.File]::Copy($source, $legacy, $true)
+
+            foreach ($editor in "cursor", "vscode", "taxcode") {
+                $source = Join-Path $OutputDirectory (Get-RichPresenceAssetPath -Name "$($asset.Key)-$design-$editor")
+                $legacy = Join-Path $OutputDirectory "editors/$editor/default/$($asset.Key)-$design.png"
+                [System.IO.File]::Copy($source, $legacy, $true)
+            }
+        }
+    }
+}
+finally {
+    $techCardTemplate.Dispose()
 }
 
 if (-not (Test-Path -LiteralPath $deviconFontPath) -or -not (Test-Path -LiteralPath $deviconCssPath)) {
@@ -709,4 +723,4 @@ New-EditorAssetFromReference -Name "vscode-alt" -ReferencePath $vscodeLogoRefere
 
 New-EditorAssetFromReference -Name "taxcode" -ReferencePath $taxcodeLogoReference
 
-Write-Output "Generated $(($assets.Count * 16) + $generatedLogoCount + 3) assets in $([System.IO.Path]::GetFullPath($OutputDirectory))"
+Write-Output "Generated $(($assets.Count * 16) + $generatedLogoCount + 3) catalog assets and $($assets.Count * 8) compatibility mirrors in $([System.IO.Path]::GetFullPath($OutputDirectory))"

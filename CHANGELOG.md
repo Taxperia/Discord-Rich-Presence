@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.7] - 2026-10-06
+
+### Fixed
+
+- Rebuild Tech Card artwork from the supplied transparent technology frame, preserving the original CODE composition and tinting it to each language color.
+- Store filled, outline, logo, Neon Mono, and Tech Card artwork in dedicated folders, including separate editor-specific design folders.
+- Retain manifest-excluded compatibility mirrors so URLs published in v1.1.6 continue to resolve for clients with cached catalogs.
+
 ## [1.1.6] - 2026-10-05
 
 ### Added

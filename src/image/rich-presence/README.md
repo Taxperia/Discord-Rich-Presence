@@ -10,22 +10,30 @@ required. The Discord application ID is still used for the IPC connection.
 rich-presence/
   catalog.json                   # Editable language IDs, extensions and editors
   manifest.json                  # Generated catalog, image paths and hashes
-  default/                       # Filled text plus *-mono and *-card artwork
+  default/                       # Filled text artwork
   logos/                         # Language logos: javascript.png, ...
   outline/                       # Styled/outlined font: javascript.png, ...
+  mono/                          # Neon Mono artwork: javascript.png, ...
+  card/                          # Tech Card artwork: javascript.png, ...
   editors/
     vscode/
       icon.png
       default/                   # Filled text with embedded VS Code logo
       outline/                   # Outlined text with embedded VS Code logo
+      mono/                      # Neon Mono with embedded VS Code logo
+      card/                      # Tech Card with embedded VS Code logo
     cursor/
       icon.png
       default/
       outline/
+      mono/
+      card/
     taxcode/
       icon.png
       default/
       outline/
+      mono/
+      card/
 ```
 
 The `outline` directory is the alternate font style. A native Discord small
@@ -43,16 +51,21 @@ UI extension host keeps Discord IPC on the desktop in remote workspaces too.
 | languageOutline | outline/javascript.png |
 | languageTextEditor | editors/cursor/default/javascript.png |
 | languageOutlineEditor | editors/cursor/outline/javascript.png |
-| languageMono | default/javascript-mono.png |
-| languageMonoEditor | editors/cursor/default/javascript-mono.png |
-| languageCard | default/javascript-card.png |
-| languageCardEditor | editors/cursor/default/javascript-card.png |
+| languageMono | mono/javascript.png |
+| languageMonoEditor | editors/cursor/mono/javascript.png |
+| languageCard | card/javascript.png |
+| languageCardEditor | editors/cursor/card/javascript.png |
 
 Logical keys such as `javascript-outline-cursor` remain in the catalog, but
 resolve to URLs instead of Developer Portal asset names. Languages without a
 logo use their filled text image. If an embedded variant is missing, its plain
 language image is used, with the small editor badge if enabled. Unknown
 languages use the generic code artwork.
+
+The dedicated `mono` and `card` directories are the canonical locations.
+Files named `*-mono.png` and `*-card.png` under the old `default` directories
+are compatibility mirrors excluded from the generated manifest. They preserve
+the URLs shipped in v1.1.6 for clients that still have that manifest cached.
 
 ## Hosting and refresh
 
@@ -103,14 +116,15 @@ or changes to the manifest schema still require extension code changes.
 
 Run `npm run assets` to regenerate the built-in set with the #090808
 background and update the manifest. The Neon Mono design uses bold Consolas
-with a colored glow and grid. Tech Card deterministically recreates the
-black-and-blue geometric reference composition at 512x512. To make an
+with a colored glow and grid. Tech Card uses the supplied transparent frame
+verbatim for the CODE card and tints that same frame to each language color.
+To make an
 additional language part of
 that generator, also add its text/color definition and optional logo glyph to
 scripts/generate-rich-presence-assets.ps1.
 
-The AI-generated design study used to guide the deterministic Tech Card
-renderer is stored at `scripts/assets/style-references/tech-card-ai-reference.png`.
+The original transparent Tech Card frame is stored at
+`scripts/assets/style-references/transparent-blue-tech-frame.png`.
 
 Logo glyphs use the MIT-licensed Devicon font. Its license and generator files
 are under scripts/vendor/devicon. Embedded Cursor and VS Code artwork comes

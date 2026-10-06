@@ -48,6 +48,31 @@ test('all ten modes work for every language and all three editors', () => {
     }
 });
 
+test('each artwork design lives in its own folder', () => {
+    assert.equal(manifest.assets.javascript.path, 'default/javascript.png');
+    assert.equal(manifest.assets['javascript-outline'].path, 'outline/javascript.png');
+    assert.equal(manifest.assets['javascript-logo'].path, 'logos/javascript.png');
+    assert.equal(manifest.assets['javascript-mono'].path, 'mono/javascript.png');
+    assert.equal(manifest.assets['javascript-card'].path, 'card/javascript.png');
+    assert.equal(manifest.assets['javascript-cursor'].path, 'editors/cursor/default/javascript.png');
+    assert.equal(manifest.assets['javascript-outline-cursor'].path, 'editors/cursor/outline/javascript.png');
+    assert.equal(manifest.assets['javascript-mono-cursor'].path, 'editors/cursor/mono/javascript.png');
+    assert.equal(manifest.assets['javascript-card-cursor'].path, 'editors/cursor/card/javascript.png');
+});
+
+test('published 1.1.6 design URLs remain available as compatibility mirrors', () => {
+    const manifestPaths = new Set(Object.values(manifest.assets).map(asset => asset.path));
+    for (const relative of [
+        'default/javascript-mono.png',
+        'default/javascript-card.png',
+        'editors/cursor/default/javascript-mono.png',
+        'editors/cursor/default/javascript-card.png',
+    ]) {
+        assert.ok(fs.existsSync(path.join(root, relative)), relative);
+        assert.equal(manifestPaths.has(relative), false);
+    }
+});
+
 test('extension precedence, language IDs, unknown languages, and editor detection', () => {
     assert.equal(resolveLanguage(manifest, 'file.TSX', 'typescript').name, 'React TSX');
     assert.equal(resolveLanguage(manifest, 'Dockerfile', 'dockerfile').name, 'Docker');

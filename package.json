@@ -2,7 +2,7 @@
   "name": "cursor-presence",
   "displayName": "%extension.displayName%",
   "description": "%extension.description%",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "publisher": "Taxperia",
   "repository": {
     "type": "git",

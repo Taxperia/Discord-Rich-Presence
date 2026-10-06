@@ -35,8 +35,8 @@ The extension supports the following large-image settings:
 | `languageLogo` | Language logo, falling back to filled text if unavailable |
 | `languageMono` | Bright monospace text with a language-colored neon glow and coding grid |
 | `languageMonoEditor` | Neon Mono with the detected editor logo embedded in the corner |
-| `languageCard` | Black-and-blue geometric Tech Card with large white language text |
-| `languageCardEditor` | Tech Card with the detected editor logo embedded in the lower-right corner |
+| `languageCard` | Supplied transparent technology frame, recolored to match the active language, with large white text |
+| `languageCardEditor` | Color-matched Tech Card with the detected editor logo embedded in the lower-right corner |
 
 | Neon Mono | Tech Card |
 |---|---|

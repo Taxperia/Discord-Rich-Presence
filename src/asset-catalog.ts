@@ -32,7 +32,7 @@ export function isAssetManifest(value: unknown): value is AssetManifest {
     const hasAsset = (id: unknown) => key(id) && owns(value.assets, id);
     for (const [id, asset] of Object.entries(value.assets)) {
         if (!key(id) || !record(asset) || typeof asset.path !== "string" ||
-            !/^(default|logos|outline|editors)\/[a-z0-9_/-]+\.png$/.test(asset.path) ||
+            !/^(default|logos|outline|mono|card|editors)\/[a-z0-9_/-]+\.png$/.test(asset.path) ||
             asset.path.includes("//") || typeof asset.sha256 !== "string" || !/^[a-f0-9]{64}$/.test(asset.sha256)) return false;
     }
     if (!hasAsset("code") || !hasAsset("code-outline")) return false;
